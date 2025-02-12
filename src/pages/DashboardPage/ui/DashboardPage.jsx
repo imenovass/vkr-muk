@@ -95,12 +95,12 @@ export const DashboardPage = () => {
                     link="#/schedule"
                     linkText="Посмотреть расписание"
                 />
-                <DashboardCard
-                    title="Материалы"
-                    value="Здесь можно показать количество материалов и т.д."
-                    link="#/teacher-zone"
-                    linkText="Управлять материалами (Teacher Zone)"
-                />
+                {/*<DashboardCard*/}
+                {/*    title="Материалы"*/}
+                {/*    value="Здесь можно показать количество материалов и т.д."*/}
+                {/*    link="#/teacher-zone"*/}
+                {/*    linkText="Управлять материалами (Teacher Zone)"*/}
+                {/*/>*/}
             </Row>
         </div>
     );

@@ -12,7 +12,7 @@ const DashboardCard = ({ title, value, extra, link, linkText }) => (
             {extra && <div className="dashboard-card-extra">{extra}</div>}
             {link && (
                 <div className="dashboard-card-link">
-                    <Button type="link" href={link}>{linkText}</Button>
+                    <Button type="primary"  href={link}>{linkText}</Button>
                 </div>
             )}
         </Card>

@@ -23,8 +23,25 @@ export const CoursesPage = () => {
         setCourses(data);
     }, []);
 
-    // Колонки таблицы
     const columns = [
+        {
+            title: "Изображение",
+            dataIndex: "imageUrl",
+            key: "imageUrl",
+            width: 70,
+            render: (url, record) => {
+                // Используем другую заглушку
+                const defaultImage = "https://placehold.co/50x50?text=No+Image";
+                const imageSrc = url || defaultImage;
+                return (
+                    <img
+                        src={imageSrc}
+                        alt={record.title}
+                        style={{ width: 50, height: 50, objectFit: "cover", borderRadius: "50%" }}
+                    />
+                );
+            },
+        },
         {
             title: "Название",
             dataIndex: "title",
@@ -60,13 +77,14 @@ export const CoursesPage = () => {
     // Успешная валидация формы -> создание курса
     const handleFinish = async (values) => {
         try {
-            const { title, description } = values;
+            const { title, description, imageUrl } = values;
             // При создании добавляем поле createdAt
             const newCourse = createCourse({
                 title,
                 description,
                 teacherId: user.login,
                 createdAt: new Date().toISOString(),
+                imageUrl,
             });
 
             // Добавляем новый курс в список и сортируем заново
@@ -108,7 +126,6 @@ export const CoursesPage = () => {
                 pagination={false}
             />
 
-            {/* Модальное окно для создания курса */}
             <Modal
                 title="Добавить курс"
                 open={isModalOpen}
@@ -134,6 +151,18 @@ export const CoursesPage = () => {
                         rules={[{ required: true, message: "Введите описание курса" }]}
                     >
                         <Input.TextArea rows={3} />
+                    </Form.Item>
+                    <Form.Item
+                        label="Ссылка на изображение (необязательно)"
+                        name="imageUrl"
+                        rules={[
+                            {
+                                type: "url",
+                                message: "Введите корректную ссылку на изображение (URL)",
+                            },
+                        ]}
+                    >
+                        <Input placeholder="https://example.com/image.jpg" />
                     </Form.Item>
                 </Form>
             </Modal>
