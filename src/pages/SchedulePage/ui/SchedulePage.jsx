@@ -5,7 +5,6 @@ import { createScheduleEvent, getAllSchedule, deleteScheduleEvent } from "../../
 import { getAllCourses } from "../../../entities/course/model/courseStorage";
 import { getSession } from "../../../features/auth/model/session";
 
-const { RangePicker } = DatePicker; // может пригодиться, если захотим период
 
 export const SchedulePage = () => {
     const [data, setData] = useState([]);
@@ -15,12 +14,10 @@ export const SchedulePage = () => {
     const user = getSession();
 
     useEffect(() => {
-        // Загружаем начальные данные расписания
         const scheduleData = getAllSchedule();
         setData(scheduleData);
     }, []);
 
-    // Колонки таблицы
     const columns = [
         {
             title: "Дата",
@@ -42,7 +39,6 @@ export const SchedulePage = () => {
             dataIndex: "courseId",
             key: "courseId",
         },
-        // Можно добавить название курса (для наглядности)
         {
             title: "Действие",
             render: (text, record) => (
@@ -57,22 +53,18 @@ export const SchedulePage = () => {
 
     const handleDelete = (id) => {
         deleteScheduleEvent(id);
-        // Обновить состояние
         setData((prev) => prev.filter((item) => item.id !== id));
     };
 
-    // Открыть модал для создания
     const handleOpenModal = () => {
         setIsModalOpen(true);
     };
 
-    // Закрыть модал
     const handleCancel = () => {
         setIsModalOpen(false);
         form.resetFields();
     };
 
-    // Сохранить новое событие
     const handleSave = () => {
         form.validateFields().then((values) => {
             const { date, time, room, courseId } = values;
@@ -83,7 +75,6 @@ export const SchedulePage = () => {
                 room,
                 courseId,
             });
-            // Обновляем список
             setData(getAllSchedule());
             handleCancel();
         });

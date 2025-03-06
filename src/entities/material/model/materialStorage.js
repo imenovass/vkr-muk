@@ -1,12 +1,12 @@
-// entities/material/model/materialStorage.js
+
 
 const MATERIALS_KEY = "materials";
 
-// Для демонстрации — пара стартовых материалов
+
 const initialMaterials = [
     {
         id: "1",
-        courseId: "1",       // курс "Математика"
+        courseId: "1",
         title: "Лекции по алгебре (PDF)",
         link: "https://example.com/algebra.pdf"
     },

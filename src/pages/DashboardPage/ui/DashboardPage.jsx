@@ -5,6 +5,7 @@ import { getSession } from "../../../features/auth/model/session";
 import { getAllCourses } from "../../../entities/course/model/courseStorage";
 import { getAllSchedule } from "../../../entities/schedule/model/scheduleStorage";
 import DashboardCard from "../../../shared/ui/Card/Card";
+import {NewsPage} from "../../NewsPage/ui/NewsPage";
 
 const { Title, Text } = Typography;
 
@@ -95,6 +96,7 @@ export const DashboardPage = () => {
                     link="#/schedule"
                     linkText="Посмотреть расписание"
                 />
+
                 {/*<DashboardCard*/}
                 {/*    title="Материалы"*/}
                 {/*    value="Здесь можно показать количество материалов и т.д."*/}
@@ -102,6 +104,7 @@ export const DashboardPage = () => {
                 {/*    linkText="Управлять материалами (Teacher Zone)"*/}
                 {/*/>*/}
             </Row>
+            <NewsPage />
         </div>
     );
 };

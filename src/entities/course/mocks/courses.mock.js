@@ -8,7 +8,6 @@ export const courseMocks = [
         key: "imageUrl",
         width: 70,
         render: (url, record) => {
-            // Используем другую заглушку
             const defaultImage = "https://placehold.co/50x50?text=No+Image";
             const imageSrc = url || defaultImage;
             return (

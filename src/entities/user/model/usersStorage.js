@@ -1,4 +1,3 @@
-// entities/user/model/usersStorage.js
 const USERS_KEY = "users";
 
 const initialUsers = [

@@ -1,11 +1,9 @@
-// app/providers/AppRouter.jsx
 import React, { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import { LoginPage } from "../../pages/LoginPage";
 import { AppLayout } from "../../widgets/AppLayout";
 
-// Ленивые импорты наших новых страниц:
 import { CoursesPageAsync } from "../../pages/CoursesPage/ui/CoursesPage.async";
 import { CourseDetailPageAsync } from "../../pages/CourseDetailPage/ui/CourseDetailPage.async";
 import { TeacherZonePageAsync } from "../../pages/TeacherZonePage/ui/TeacherZonePage.async";

@@ -1,14 +1,11 @@
-// entities/course/model/courseStorage.js
-
 const STORAGE_KEY = "courses";
 
-// Стартовый (mock) список курсов (можно загрузить при первом запуске)
 const initialCourses = [
     {
         id: "1",
         title: "Математика",
         description: "Базовый курс по математике",
-        teacherId: "teacher", // условно привяжем к логину преподавателя
+        teacherId: "teacher",
     },
     {
         id: "2",
@@ -18,11 +15,9 @@ const initialCourses = [
     },
 ];
 
-// Функция получения списка из localStorage
 export function getAllCourses() {
     const data = localStorage.getItem(STORAGE_KEY);
     if (!data) {
-        // Если ничего нет в localStorage, записываем initialCourses
         localStorage.setItem(STORAGE_KEY, JSON.stringify(initialCourses));
         return initialCourses;
     }
@@ -34,21 +29,17 @@ export function getAllCourses() {
     }
 }
 
-// Функция поиска курса по id
 export function getCourseById(id) {
     const courses = getAllCourses();
     return courses.find((c) => c.id === id) || null;
 }
 
-// Сохранить весь массив курсов
 function saveAllCourses(courses) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 }
 
-// Создать новый курс
 export function createCourse(courseData) {
     const courses = getAllCourses();
-    // Генерация условного ID
     const newId = String(Date.now());
     const newCourse = { id: newId, ...courseData };
     courses.push(newCourse);
