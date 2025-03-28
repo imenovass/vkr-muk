@@ -9,6 +9,8 @@
     "@testing-library/user-event": "^13.5.0",
     "ajv": "^8.17.1",
     "antd": "^5.23.2",
+    "pocketbase": "^0.25.2",
+    "prettier": "^3.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.3",

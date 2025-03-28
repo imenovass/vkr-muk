@@ -19,11 +19,13 @@ export const AppLayout = () => {
     const location = useLocation();
     const user = getSession();
 
+
     React.useEffect(() => {
         if (!user) {
             navigate("/login");
         }
     }, [user, navigate]);
+
 
     // Логика меню (подсветка пункта)
     const selectedKey = `/${location.pathname.split("/")[1]}`;

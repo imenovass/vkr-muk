@@ -12,7 +12,9 @@ import { DashboardPageAsync } from "../../pages/DashboardPage/ui/DashboardPage.a
 import { ProfilePageAsync } from "../../pages/ProfilePage/ui/ProfilePage.async";
 import { SchedulePageAsync } from "../../pages/SchedulePage/ui/SchedulePage.async";
 
+import {CourseDetailPage} from "../../pages/CourseDetailPage/ui/CourseDetailPage";
 import { Loader } from "../../shared/ui/Loader/Loader";
+
 
 export const AppRouter = () => {
     return (
@@ -60,14 +62,15 @@ export const AppRouter = () => {
                         </Suspense>
                     }
                 />
-                <Route
-                    path="courses/:id"
-                    element={
-                        <Suspense fallback={<Loader />}>
-                            <CourseDetailPageAsync />
-                        </Suspense>
-                    }
-                />
+                <Route path="courses/:courseId" element={<CourseDetailPage />} />
+                {/*<Route*/}
+                {/*    path="courses/:id"*/}
+                {/*    element={*/}
+                {/*        <Suspense fallback={<Loader />}>*/}
+                {/*            <CourseDetailPageAsync />*/}
+                {/*        </Suspense>*/}
+                {/*    }*/}
+                {/*/>*/}
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

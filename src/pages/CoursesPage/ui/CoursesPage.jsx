@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, notification } from "antd";
+import {
+    Row,
+    Col,
+    Card,
+    Button,
+    Modal,
+    Form,
+    Input,
+    notification,
+} from "antd";
 import { useNavigate } from "react-router-dom";
 import { getSession } from "../../../features/auth/model/session";
 import {
     getAllCourses,
     createCourse,
+    updateCourse,
 } from "../../../entities/course/model/courseStorage";
 
 export const CoursesPage = () => {
@@ -12,157 +22,164 @@ export const CoursesPage = () => {
     const user = getSession();
     const [courses, setCourses] = useState([]);
 
-    // Модалка для создания курса
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [form] = Form.useForm();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [createForm] = Form.useForm();
 
     useEffect(() => {
-        let data = getAllCourses();
-        // Сортируем курсы (новые сверху)
-        data = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const data = getAllCourses();
         setCourses(data);
     }, []);
 
-    const columns = [
-        {
-            title: "Изображение",
-            dataIndex: "imageUrl",
-            key: "imageUrl",
-            width: 70,
-            render: (url, record) => {
-                // Используем другую заглушку
-                const defaultImage = "https://placehold.co/50x50?text=No+Image";
-                const imageSrc = url || defaultImage;
-                return (
-                    <img
-                        src={imageSrc}
-                        alt={record.title}
-                        style={{ width: 50, height: 50, objectFit: "cover", borderRadius: "50%" }}
-                    />
-                );
-            },
-        },
-        {
-            title: "Название",
-            dataIndex: "title",
-            key: "title",
-        },
-        {
-            title: "Описание",
-            dataIndex: "description",
-            key: "description",
-        },
-        {
-            title: "Действия",
-            key: "actions",
-            render: (text, record) => (
-                <Button type="link" onClick={() => navigate(`/courses/${record.id}`)}>
-                    Открыть
-                </Button>
-            ),
-        },
-    ];
+    // Разделяем курсы на "мои" и "другие"
+    let myCourses = [];
+    let otherCourses = [];
 
-    // Открытие модалки
-    const handleOpenModal = () => {
-        setIsModalOpen(true);
+    if (user?.role === "teacher") {
+        myCourses = courses.filter((c) => c.teacherId === user.username);
+        otherCourses = courses.filter((c) => c.teacherId !== user.username);
+    } else if (user?.role === "student") {
+        myCourses = courses.filter((c) => c.participants.includes(user.username));
+        otherCourses = courses.filter((c) => !c.participants.includes(user.username));
+    }
+
+    // -----------------------
+    // CREATE (teacher)
+    // -----------------------
+    const openCreateModal = () => {
+        setIsCreateModalOpen(true);
+        createForm.resetFields();
     };
-
-    // Закрыть модалку
-    const handleCancel = () => {
-        setIsModalOpen(false);
-        form.resetFields();
+    const handleCancelCreate = () => {
+        setIsCreateModalOpen(false);
+        createForm.resetFields();
     };
-
-    // Успешная валидация формы -> создание курса
-    const handleFinish = async (values) => {
-        try {
-            const { title, description, imageUrl } = values;
-            // При создании добавляем поле createdAt
+    const handleCreateCourse = () => {
+        createForm.validateFields().then((values) => {
+            const { title, description } = values;
             const newCourse = createCourse({
                 title,
                 description,
-                teacherId: user.login,
+                teacherId: user.username,
+                participants: [],
                 createdAt: new Date().toISOString(),
-                imageUrl,
             });
-
-            // Добавляем новый курс в список и сортируем заново
-            setCourses((prev) => {
-                const updated = [...prev, newCourse];
-                return updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            });
-
-            // Уведомление об успехе
+            setCourses((prev) => [newCourse, ...prev]);
             notification.success({ message: "Курс успешно создан!" });
+            handleCancelCreate();
+        });
+    };
 
-            // Закрываем модалку
-            handleCancel();
-        } catch (error) {
-            console.error(error);
-            notification.error({ message: "Ошибка при создании курса" });
+    // -----------------------
+    // JOIN COURSE (student)
+    // -----------------------
+    const handleJoinCourse = (courseId) => {
+        const course = courses.find((c) => c.id === courseId);
+        if (!course) return;
+        if (!course.participants.includes(user.username)) {
+            const updatedParticipants = [...course.participants, user.username];
+            // Обновим в хранилище
+            const updated = updateCourse(courseId, {
+                participants: updatedParticipants,
+            });
+            // Локально заменим объект
+            setCourses((prev) => prev.map((c) => (c.id === courseId ? updated : c)));
+            notification.success({ message: "Вы записались на курс" });
         }
     };
 
-    // Ошибка валидации
-    const handleFinishFailed = (errorInfo) => {
-        console.log("Validation Failed:", errorInfo);
+    // -----------------------
+    // Переход на детальную страницу
+    // -----------------------
+    const goToDetail = (courseId) => {
+        navigate(`/courses/${courseId}`);
+    };
+
+    // =======================
+    // РЕНДЕР КАРТОЧЕК
+    // =======================
+    const renderMyCourseCard = (course) => {
+        return (
+            <Col key={course.id} xs={24} sm={12} md={8} lg={6} style={{ marginBottom: 16 }}>
+                <Card
+                    title={course.title}
+                    hoverable
+                    style={{ height: "100%", cursor: "pointer" }}
+                    onClick={() => goToDetail(course.id)}  // только переход
+                >
+                    <p>{course.description}</p>
+
+                    {/* Если студент, показываем что он участвует */}
+                    {user.role === "student" && course.participants.includes(user.username) && (
+                        <p style={{ color: "green" }}>Вы участвуете в курсе</p>
+                    )}
+                </Card>
+            </Col>
+        );
+    };
+
+    const renderOtherCourseCard = (course) => {
+        return (
+            <Col key={course.id} xs={24} sm={12} md={8} lg={6} style={{ marginBottom: 16 }}>
+                <Card
+                    title={course.title}
+                    hoverable={false}
+                    style={{ height: "100%", cursor: "default" }}
+                >
+                    <p>{course.description}</p>
+                    {/* Кнопка "Записаться" только для студентов, которые ещё не в курсе */}
+                    {user.role === "student" && !course.participants.includes(user.username) && (
+                        <Button type="primary" onClick={() => handleJoinCourse(course.id)}>
+                            Записаться
+                        </Button>
+                    )}
+                </Card>
+            </Col>
+        );
     };
 
     return (
-        <div>
-            <h2>Список курсов</h2>
+        <div style={{ padding: 16 }}>
+            <h2>Курсы</h2>
 
             {user?.role === "teacher" && (
-                <Button type="primary" onClick={handleOpenModal} style={{ marginBottom: 16 }}>
-                    Добавить курс
+                <Button type="primary" style={{ marginBottom: 16 }} onClick={openCreateModal}>
+                    Создать курс
                 </Button>
             )}
 
-            <Table
-                rowKey="id"
-                columns={columns}
-                dataSource={courses}
-                pagination={false}
-            />
+            {/* Мои курсы */}
+            <h3>Мои курсы</h3>
+            <Row gutter={[16, 16]}>
+                {myCourses.map((course) => renderMyCourseCard(course))}
+            </Row>
 
+            {/* Другие курсы */}
+            <h3 style={{ marginTop: 32 }}>Другие курсы</h3>
+            <Row gutter={[16, 16]}>
+                {otherCourses.map((course) => renderOtherCourseCard(course))}
+            </Row>
+
+            {/* Модалка: Создать курс */}
             <Modal
-                title="Добавить курс"
-                open={isModalOpen}
-                onCancel={handleCancel}
-                onOk={() => form.submit()}
+                title="Создать курс"
+                open={isCreateModalOpen}
+                onCancel={handleCancelCreate}
+                onOk={handleCreateCourse}
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleFinish}
-                    onFinishFailed={handleFinishFailed}
-                >
+                <Form layout="vertical" form={createForm}>
                     <Form.Item
                         label="Название курса"
                         name="title"
-                        rules={[{ required: true, message: "Введите название курса" }]}
+                        rules={[{ required: true, message: "Введите название" }]}
                     >
                         <Input />
                     </Form.Item>
                     <Form.Item
-                        label="Описание"
+                        label="Описание курса"
                         name="description"
-                        rules={[{ required: true, message: "Введите описание курса" }]}
+                        rules={[{ required: true, message: "Введите описание" }]}
                     >
                         <Input.TextArea rows={3} />
-                    </Form.Item>
-                    <Form.Item
-                        label="Ссылка на изображение (необязательно)"
-                        name="imageUrl"
-                        rules={[
-                            {
-                                type: "url",
-                                message: "Введите корректную ссылку на изображение (URL)",
-                            },
-                        ]}
-                    >
-                        <Input placeholder="https://example.com/image.jpg" />
                     </Form.Item>
                 </Form>
             </Modal>
