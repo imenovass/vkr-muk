@@ -19,6 +19,29 @@ export const AppLayout = () => {
     const location = useLocation();
     const user = getSession();
 
+    const menuItems = [
+        {
+            key: "/", // соответствует selectedKey
+            icon: <HomeOutlined />,
+            label: <NavLink to="/">Главная</NavLink>,
+        },
+        {
+            key: "/courses",
+            icon: <BookOutlined />,
+            label: <NavLink to="/courses">Курсы</NavLink>,
+        },
+        {
+            key: "/schedule",
+            icon: <CalendarOutlined />,
+            label: <NavLink to="/schedule">Расписание</NavLink>,
+        },
+        {
+            key: "/profile",
+            icon: <UserOutlined />,
+            label: <NavLink to="/profile">Профиль</NavLink>,
+        },
+    ];
+
 
     React.useEffect(() => {
         if (!user) {
@@ -68,6 +91,14 @@ export const AppLayout = () => {
         navigate("/login");
     };
 
+    if (user?.role === "teacher") {
+        menuItems.push({
+            key: "/teacher-zone",
+            icon: <PieChartOutlined />,
+            label: <NavLink to="/teacher-zone">Для преподавателя</NavLink>,
+        });
+    }
+
     return (
         <Layout style={{ minHeight: "100vh" }}>
             {/* Фиксированный Sider */}
@@ -83,29 +114,14 @@ export const AppLayout = () => {
                 }}
             >
                 <Logo />
-                <Menu theme="dark" mode="inline" selectedKeys={[selectedKey]}>
-                    <Menu.Item key="/" icon={<HomeOutlined />}>
-                        <NavLink to="/">Главная</NavLink>
-                    </Menu.Item>
-                    <Menu.Item key="/courses" icon={<BookOutlined />}>
-                        <NavLink to="/courses">Курсы</NavLink>
-                    </Menu.Item>
-                    <Menu.Item key="/schedule" icon={<CalendarOutlined />}>
-                        <NavLink to="/schedule">Расписание</NavLink>
-                    </Menu.Item>
-                    <Menu.Item key="/profile" icon={<UserOutlined />}>
-                        <NavLink to="/profile">Профиль</NavLink>
-                    </Menu.Item>
-                    {user?.role === "teacher" && (
-                        <Menu.Item key="/teacher-zone" icon={<PieChartOutlined />}>
-                            <NavLink to="/teacher-zone">Для преподавателя</NavLink>
-                        </Menu.Item>
-                    )}
-                </Menu>
+                <Menu
+                    theme="dark"
+                    mode="inline"
+                    selectedKeys={[selectedKey]}
+                    items={menuItems}
+                />
             </Sider>
 
-            {/* Чтобы контент не налезал на зафиксированный Sider,
-          смещаем Layout вправо на ширину в 200px */}
             <Layout style={{ marginLeft: 200 }}>
                 <Header
                     style={{
