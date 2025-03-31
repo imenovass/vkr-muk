@@ -5,7 +5,6 @@ import { LoginPage } from "../../pages/LoginPage";
 import { AppLayout } from "../../widgets/AppLayout";
 
 import { CoursesPageAsync } from "../../pages/CoursesPage/ui/CoursesPage.async";
-import { CourseDetailPageAsync } from "../../pages/CourseDetailPage/ui/CourseDetailPage.async";
 import { TeacherZonePageAsync } from "../../pages/TeacherZonePage/ui/TeacherZonePage.async";
 
 import { DashboardPageAsync } from "../../pages/DashboardPage/ui/DashboardPage.async";
@@ -14,6 +13,8 @@ import { SchedulePageAsync } from "../../pages/SchedulePage/ui/SchedulePage.asyn
 
 import {CourseDetailPage} from "../../pages/CourseDetailPage/ui/CourseDetailPage";
 import { Loader } from "../../shared/ui/Loader/Loader";
+import {StudentListPage} from "../../pages/StudentListPage/StudentListPage";
+import {StudentDetailPage} from "../../pages/StudentDetailPage/StudentDetailPage";
 
 
 export const AppRouter = () => {
@@ -38,6 +39,8 @@ export const AppRouter = () => {
                         </Suspense>
                     }
                 />
+                <Route path="/students" element={<StudentListPage />} />
+                <Route path="/students/:username" element={<StudentDetailPage />} />
                 <Route
                     path="teacher-zone"
                     element={
@@ -63,14 +66,6 @@ export const AppRouter = () => {
                     }
                 />
                 <Route path="courses/:courseId" element={<CourseDetailPage />} />
-                {/*<Route*/}
-                {/*    path="courses/:id"*/}
-                {/*    element={*/}
-                {/*        <Suspense fallback={<Loader />}>*/}
-                {/*            <CourseDetailPageAsync />*/}
-                {/*        </Suspense>*/}
-                {/*    }*/}
-                {/*/>*/}
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

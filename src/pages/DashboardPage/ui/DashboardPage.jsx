@@ -74,9 +74,6 @@ export const DashboardPage = () => {
                 <DashboardCard
                     title="Всего курсов:"
                     value={courses.length}
-                    extra={user?.role === "teacher" && (
-                        <Text type="secondary">Курсы, которые вы ведёте: <Text strong>{teacherCoursesCount}</Text></Text>
-                    )}
                     link="#/courses"
                     linkText="Перейти к курсам"
                 />

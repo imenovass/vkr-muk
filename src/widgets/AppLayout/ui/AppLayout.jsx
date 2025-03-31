@@ -6,6 +6,7 @@ import {
     CalendarOutlined,
     UserOutlined,
     PieChartOutlined,
+    SettingOutlined,
 } from "@ant-design/icons";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getSession, clearSession } from "../../../features/auth/model/session";
@@ -31,13 +32,18 @@ export const AppLayout = () => {
             label: <NavLink to="/courses">Курсы</NavLink>,
         },
         {
+            key: "/students",
+            icon: <UserOutlined />,
+            label: <NavLink to="/students">Студенты</NavLink>,
+        },
+        {
             key: "/schedule",
             icon: <CalendarOutlined />,
             label: <NavLink to="/schedule">Расписание</NavLink>,
         },
         {
             key: "/profile",
-            icon: <UserOutlined />,
+            icon: <SettingOutlined />,
             label: <NavLink to="/profile">Профиль</NavLink>,
         },
     ];
@@ -65,6 +71,10 @@ export const AppLayout = () => {
         // Если, например, /courses/123 → «Детали курса (ID: 123)»
         if (!name && index > 0 && pathSnippets[0] === "courses") {
             name = `Детали курса (ID: ${segment})`;
+        }
+        if (!name && index > 0 && pathSnippets[0] === "students") {
+            // Например, second snippet — это имя студента
+            name = `Студент: ${segment}`;
         }
         // Если не нашли в словаре – используем сам segment
         if (!name) {

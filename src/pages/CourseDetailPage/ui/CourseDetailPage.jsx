@@ -422,10 +422,34 @@ export const CourseDetailPage = () => {
     // Рендер таба "Домашние работы"
     // =======================
     const renderSubmissionsTab = () => {
+        // Определяем, какие работы показывать
+        const visibleSubmissions = user.role === "teacher"
+            ? course.submissions
+            : (course.submissions || []).filter(
+                sub => sub.studentId === user.username
+            );
+
+        // Если у учителя нет работ — показываем одно сообщение,
+        // если у студента — другое
+        if (!visibleSubmissions || visibleSubmissions.length === 0) {
+            return (
+                <div style={{ padding: 16 }}>
+                    {user.role === "student" ? (
+                        <p>Вы пока не загрузили ни одной работы.</p>
+                    ) : (
+                        <p>Пока никто не загрузил работы</p>
+                    )}
+                    {user.role === "student" && (
+                        <Button type="primary" onClick={openSubmissionModal}>
+                            Загрузить работу
+                        </Button>
+                    )}
+                </div>
+            );
+        }
 
         return (
             <div style={{ padding: 16 }}>
-                {/* Кнопка "Загрузить работу" - только student */}
                 {user.role === "student" && (
                     <Button
                         type="primary"
@@ -435,9 +459,9 @@ export const CourseDetailPage = () => {
                         Загрузить работу
                     </Button>
                 )}
-                {course.submissions?.length === 0 && <p>Пока никто не загрузил работы</p>}
+
                 <List
-                    dataSource={course.submissions}
+                    dataSource={visibleSubmissions}
                     renderItem={(sub) => {
                         const isAuthor = sub.studentId === user.username;
                         return (
@@ -451,7 +475,7 @@ export const CourseDetailPage = () => {
                                         <Button
                                             type="link"
                                             onClick={() => {
-                                                // Открыть файл
+                                                // Открыть файл в новой вкладке
                                                 const newWindow = window.open(sub.fileData, "_blank");
                                                 if (newWindow) newWindow.opener = null;
                                             }}
@@ -469,7 +493,10 @@ export const CourseDetailPage = () => {
 
                                     {/* Учитель может выставить оценку */}
                                     {user.role === "teacher" && (
-                                        <Button type="primary" onClick={() => openGradeModal(sub.id)}>
+                                        <Button
+                                            type="primary"
+                                            onClick={() => openGradeModal(sub.id)}
+                                        >
                                             Поставить оценку
                                         </Button>
                                     )}
@@ -488,6 +515,7 @@ export const CourseDetailPage = () => {
             </div>
         );
     };
+
 
 
 
