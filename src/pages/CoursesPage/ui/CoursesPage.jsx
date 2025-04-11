@@ -15,6 +15,7 @@ import {
     getAllCourses,
     createCourse,
     updateCourse,
+    saveAllCourses
 } from "../../../entities/course/model/courseStorage";
 
 export const CoursesPage = () => {
@@ -26,7 +27,56 @@ export const CoursesPage = () => {
     const [createForm] = Form.useForm();
 
     useEffect(() => {
-        const data = getAllCourses();
+        // 1. Считываем курсы из localStorage
+        let data = getAllCourses();
+
+        // 2. Проверяем, есть ли курс "Физика" (id=2)
+        const hasDefault = data.some((c) => c.id === "2");
+
+        if (!hasDefault) {
+            // 3. Если нет, добавляем
+            const defaultCourse = {
+                id: "2",
+                title: "Физика",
+                description: "Введение в механику",
+                teacherId: "teacher",          // учитель
+                participants: [], // например, какие-то студенты
+                materials: [
+                    {
+                        id: "1743408573894",
+                        title: "Что такое физика?",
+                        fileData: "",
+                        authorId: "teacher",
+                        createdAt: "2025-03-31T08:09:33.893Z",
+                        url: "https://example.com/algebra.pdf",
+                    },
+                ],
+                submissions: [
+                    {
+                        id: "1743420673589",
+                        grade: "3",
+                        studentId: "iska",
+                        fileData: "data:image/svg+xml;base64,...",
+                        comment: "ыва",
+                        createdAt: "2025-03-31T11:31:13.588Z",
+                    },
+                    {
+                        id: "1743423911022",
+                        grade: "4",
+                        studentId: "student",
+                        fileData: "data:image/png;base64,...",
+                        comment: "Student",
+                        createdAt: "2025-03-31T12:25:11.022Z",
+                    },
+                ],
+                url: "",
+            };
+            data.push(defaultCourse);
+            // Сохраняем обратно в localStorage
+            saveAllCourses(data);
+        }
+
+        // 4. Кладём в стейт (уже будет с нашим дефолтным курсом, если его не было)
         setCourses(data);
     }, []);
 
@@ -147,17 +197,25 @@ export const CoursesPage = () => {
                 </Button>
             )}
 
-            {/* Мои курсы */}
             <h3>Мои курсы</h3>
-            <Row gutter={[16, 16]}>
-                {myCourses.map((course) => renderMyCourseCard(course))}
-            </Row>
+            {myCourses.length === 0 ? (
+                <p>Нет курсов</p>
+            ) : (
+                <Row gutter={[16, 16]}>
+                    {myCourses.map((course) => renderMyCourseCard(course))}
+                </Row>
+            )}
 
             {/* Другие курсы */}
             <h3 style={{ marginTop: 32 }}>Другие курсы</h3>
-            <Row gutter={[16, 16]}>
-                {otherCourses.map((course) => renderOtherCourseCard(course))}
-            </Row>
+            {otherCourses.length === 0 ? (
+                <p>Нет курсов</p>
+            ) : (
+                <Row gutter={[16, 16]}>
+                    {otherCourses.map((course) => renderOtherCourseCard(course))}
+                </Row>
+            )}
+
 
             {/* Модалка: Создать курс */}
             <Modal

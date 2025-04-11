@@ -1,6 +1,6 @@
 const STORAGE_KEY = "courses";
 
-function saveAllCourses(courses) {
+export function saveAllCourses(courses) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 }
 

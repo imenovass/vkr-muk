@@ -1,68 +1,61 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Card, Row, Col, message, Button } from "antd";
 import { useNavigate } from "react-router-dom";
-import { getAllCourses } from "../../entities/course/model/courseStorage";
 import { getSession } from "../../features/auth/model/session";
+import { pb } from "../../shared/config/pb";
 
 export const StudentListPage = () => {
     const [students, setStudents] = useState([]);
     const navigate = useNavigate();
-    const user = getSession(); // { username, role: "teacher"|"student", ... }
+    const user = getSession(); // { username, role, ... } - из вашей логики сессии
 
     useEffect(() => {
-        const courses = getAllCourses();
-        if (!courses || courses.length === 0) {
-            message.warn("Курсы не найдены или их нет");
-            return;
-        }
-
-        // Собираем всех участников из всех курсов
-        const participantsSet = new Set();
-        courses.forEach((course) => {
-            (course.participants || []).forEach((p) => {
-                participantsSet.add(p);
+        pb.collection("users2")
+            .getList(1, 50, { filter: 'role="student"' })
+            .then((pageData) => {
+                // pageData.items — массив записей, соответствующих фильтру
+                setStudents(pageData.items);
+            })
+            .catch((err) => {
+                console.error("Ошибка при получении списка студентов:", err);
+                message.error("Не удалось загрузить список студентов");
             });
-        });
-
-        // Преобразуем Set в массив
-        let allStudents = Array.from(participantsSet);
-
-        // Если пользователь - студент, то показываем только его
-        if (user.role === "student") {
-            allStudents = [user.username];
-        }
-
-        setStudents(allStudents);
     }, []);
 
-    // Если нет студентов
-    if (!students || students.length === 0) {
+    // Пример useMemo: например, сортируем студентов по username (или по любому другому полю)
+    // чтобы не пересчитывать это при каждом ререндере.
+    const memoizedStudents = useMemo(() => {
+        return [...students].sort((a, b) => a.username.localeCompare(b.username));
+    }, [students]);
+
+    if (memoizedStudents.length === 0) {
         return <div style={{ padding: 16 }}>Студенты не найдены</div>;
     }
 
-    // Рендерим в сетке (Row, Col), чтобы карточки красиво шли
     return (
         <div style={{ padding: 16 }}>
             <h2>Список студентов</h2>
             <Row gutter={[16, 16]}>
-                {students.map((studentName) => (
-                    <Col xs={24} sm={12} md={8} lg={6} key={studentName}>
+                {memoizedStudents.map((student) => (
+                    <Col key={student.id} xs={24} sm={12} md={8} lg={6}>
                         <Card
-                            title={studentName}
+                            title={student.username}
                             style={{ width: "100%" }}
-                            // Небольшая стилистика
                             actions={[
                                 <Button
                                     type="link"
-                                    onClick={() => navigate(`/students/${studentName}`)}
+                                    onClick={() =>
+                                        navigate(`/students/${student.username}`)
+                                    }
                                 >
                                     Оценки
                                 </Button>,
                             ]}
                         >
-                            {/* Дополнительная информация о студенте, если есть */}
-                            <p>Роль: студент</p>
-                            {/* Здесь можно выводить email, avatar, если в сессии/данных есть */}
+                            {/* role и active у нас уже в фильтре,
+                                но можно вывести ещё какую-то информацию: */}
+                            <p>Роль: {student.role}</p>
+                            <p>Active: {String(student.active)}</p>
                         </Card>
                     </Col>
                 ))}
