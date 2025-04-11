@@ -1,7 +1,6 @@
-// pages/NewsPage/ui/NewsPage.jsx
-
 import React, { useEffect, useState } from "react";
-import { Button, Card, Modal, Form, Input, notification } from "antd";
+import { Button, Card, Modal, Form, Input, notification, Upload } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 import { getSession } from "../../../features/auth/model/session";
 import {
     getAllNews,
@@ -10,30 +9,24 @@ import {
     deleteNews,
 } from "../../../entities/news/model/newsStorage";
 
-// Импорт SASS (проверьте, что у вас настроен loader)
 import "./NewsPage.scss";
+import { getBase64 } from "./utils";
 
 export const NewsPage = () => {
     const user = getSession(); // { login, role, fullName, ... }
     const [newsList, setNewsList] = useState([]);
-
-    // --- Модалка "Создать новость" ---
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [createForm] = Form.useForm();
-
-    // --- Модалка "Редактировать новость" ---
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editForm] = Form.useForm();
     const [editingNewsId, setEditingNewsId] = useState(null);
 
     useEffect(() => {
         const list = getAllNews();
-        setNewsList(list); // уже отсортированное или нет — можно, например, list.sort(...)
+        setNewsList(list);
     }, []);
 
-    // -------------------------------
-    // СОЗДАНИЕ
-    // -------------------------------
+    // ОТКРЫТЬ/ЗАКРЫТЬ создание
     const openCreateModal = () => {
         setIsCreateModalOpen(true);
         createForm.resetFields();
@@ -44,14 +37,55 @@ export const NewsPage = () => {
         createForm.resetFields();
     };
 
-    const handleCreateFinish = (values) => {
+    // ОТКРЫТЬ/ЗАКРЫТЬ редактирование
+    const openEditModal = (post) => {
+        setEditingNewsId(post.id);
+        setIsEditModalOpen(true);
+
+        // Подставляем начальные значения в форму
+        editForm.setFieldsValue({
+            title: post.title,
+            content: post.content,
+            // Для Upload нужно сформировать массив fileList
+            image: post.image
+                ? [
+                    {
+                        uid: "-1",
+                        name: "news-image",
+                        status: "done",
+                        url: post.image, // base64 либо какая-то ссылка
+                    },
+                ]
+                : [],
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditModalOpen(false);
+        setEditingNewsId(null);
+        editForm.resetFields();
+    };
+
+    // -------------------------------
+    // СОЗДАНИЕ
+    // -------------------------------
+    // Вызывается при сабмите формы "Создать"
+    const handleCreateFinish = async (values) => {
         try {
+            // Получим Base64-изображение из Upload (если загружено)
+            let imageBase64 = "";
+            if (values.image && values.image.length > 0) {
+                const fileObj = values.image[0].originFileObj;
+                imageBase64 = await getBase64(fileObj);
+            }
+
             const newPost = createNews({
                 author: user.fullName || user.login,
                 role: user.role,
                 title: values.title,
                 content: values.content,
                 createdAt: new Date().toISOString(),
+                image: imageBase64,
             });
             setNewsList((prev) => [newPost, ...prev]);
             notification.success({ message: "Новость опубликована!" });
@@ -65,26 +99,19 @@ export const NewsPage = () => {
     // -------------------------------
     // РЕДАКТИРОВАНИЕ
     // -------------------------------
-    const openEditModal = (post) => {
-        setEditingNewsId(post.id);
-        setIsEditModalOpen(true);
-        editForm.setFieldsValue({
-            title: post.title,
-            content: post.content,
-        });
-    };
-
-    const handleCancelEdit = () => {
-        setIsEditModalOpen(false);
-        setEditingNewsId(null);
-        editForm.resetFields();
-    };
-
-    const handleEditFinish = (values) => {
+    // Вызывается при сабмите формы "Редактировать"
+    const handleEditFinish = async (values) => {
         try {
+            let imageBase64 = "";
+            if (values.image && values.image.length > 0) {
+                const fileObj = values.image[0].originFileObj;
+                imageBase64 = await getBase64(fileObj);
+            }
+
             const updated = updateNews(editingNewsId, {
                 title: values.title,
                 content: values.content,
+                image: imageBase64,
             });
             setNewsList((prev) =>
                 prev.map((item) => (item.id === editingNewsId ? updated : item))
@@ -111,16 +138,20 @@ export const NewsPage = () => {
         }
     };
 
+    // Функция для удобного преобразования Upload-события в нужный формат
+    const normFile = (e) => {
+        if (Array.isArray(e)) {
+            return e;
+        }
+        return e?.fileList;
+    };
+
     return (
         <div className="newsContainer">
             <h2>Новости</h2>
 
             {user?.role === "teacher" && (
-                <Button
-                    type="primary"
-                    style={{ marginBottom: 16 }}
-                    onClick={openCreateModal}
-                >
+                <Button type="primary" style={{ marginBottom: 16 }} onClick={openCreateModal}>
                     Создать новость
                 </Button>
             )}
@@ -129,27 +160,36 @@ export const NewsPage = () => {
                 {newsList.map((post) => (
                     <div className="newsCard" key={post.id}>
                         <Card>
-                            <div className="newsMeta">
+                            <div className="newsMeta content">
                                 Автор: <b>{post.author}</b> |{" "}
                                 {new Date(post.createdAt).toLocaleString()}
                             </div>
-                            <div className="newsTitle">{post.title}</div>
-                            <div className="newsContent">{post.content}</div>
-
-                            {user?.role === "teacher" && (
-                                <div style={{textAlign: "right", marginTop: 8}}>
-                                    <Button
-                                        type="link"
-                                        onClick={() => openEditModal(post)}
-                                        style={{marginRight: 8}}
-                                    >
-                                        Редактировать
-                                    </Button>
-                                    <Button danger type="link" onClick={() => handleDelete(post.id)}>
-                                        Удалить
-                                    </Button>
+                            {post.image && (
+                                <div>
+                                    <img src={post.image} alt="изображение новости" className="newsImage"/>
                                 </div>
                             )}
+
+                            <div className="content">
+
+                                <div className="newsTitle">{post.title}</div>
+                                <div className="newsContent">{post.content}</div>
+
+                                {user?.role === "teacher" && (
+                                    <div style={{textAlign: "right", marginTop: 8}}>
+                                        <Button
+                                            type="link"
+                                            onClick={() => openEditModal(post)}
+                                            style={{marginRight: 8}}
+                                        >
+                                            Редактировать
+                                        </Button>
+                                        <Button danger type="link" onClick={() => handleDelete(post.id)}>
+                                            Удалить
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </Card>
                     </div>
                 ))}
@@ -162,7 +202,12 @@ export const NewsPage = () => {
                 onCancel={handleCancelCreate}
                 onOk={() => createForm.submit()}
             >
-                <Form form={createForm} layout="vertical" onFinish={handleCreateFinish}>
+                <Form
+                    form={createForm}
+                    layout="vertical"
+                    onFinish={handleCreateFinish}
+                    name="createNewsForm"
+                >
                     <Form.Item
                         label="Заголовок"
                         name="title"
@@ -176,6 +221,25 @@ export const NewsPage = () => {
                         rules={[{ required: true, message: "Введите текст новости" }]}
                     >
                         <Input.TextArea rows={4} />
+                    </Form.Item>
+
+                    {/* Поле для загрузки картинки */}
+                    <Form.Item
+                        label="Фото (одно)"
+                        name="image"
+                        valuePropName="fileList"
+                        getValueFromEvent={normFile}
+                    >
+                        <Upload
+                            listType="picture-card"
+                            maxCount={1}
+                            beforeUpload={() => false} // чтобы не отправляло файл на сервер автоматически
+                        >
+                            <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 8 }}>Загрузить</div>
+                            </div>
+                        </Upload>
                     </Form.Item>
                 </Form>
             </Modal>
@@ -187,7 +251,12 @@ export const NewsPage = () => {
                 onCancel={handleCancelEdit}
                 onOk={() => editForm.submit()}
             >
-                <Form form={editForm} layout="vertical" onFinish={handleEditFinish}>
+                <Form
+                    form={editForm}
+                    layout="vertical"
+                    onFinish={handleEditFinish}
+                    name="editNewsForm"
+                >
                     <Form.Item
                         label="Заголовок"
                         name="title"
@@ -201,6 +270,24 @@ export const NewsPage = () => {
                         rules={[{ required: true, message: "Введите текст новости" }]}
                     >
                         <Input.TextArea rows={4} />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Фото (одно)"
+                        name="image"
+                        valuePropName="fileList"
+                        getValueFromEvent={normFile}
+                    >
+                        <Upload
+                            listType="picture-card"
+                            maxCount={1}
+                            beforeUpload={() => false}
+                        >
+                            <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 8 }}>Загрузить</div>
+                            </div>
+                        </Upload>
                     </Form.Item>
                 </Form>
             </Modal>

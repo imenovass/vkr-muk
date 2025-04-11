@@ -58,10 +58,7 @@ export const DashboardPage = () => {
     }, []);
 
     // Подсчитаем, сколько курсов ведёт преподаватель (teacher) и т.д.
-    let teacherCoursesCount = 0;
-    if (user && user.role === "teacher") {
-        teacherCoursesCount = courses.filter((c) => c.teacherId === user.login).length;
-    }
+
 
     return (
         <div style={{ padding: "16px" }}>

@@ -1,32 +1,49 @@
-// entities/news/model/newsStorage.js
+// /entities/news/model/newsStorage.js
+
+import img from "../../../assets/img/matem.jpg";
 
 const NEWS_KEY = "news";
 
+/**
+ * Начальные данные (моки).
+ * Если в localStorage нет сохранённых новостей,
+ * они будут записаны при первом обращении к getAllNews().
+ */
 const initialNews = [
     {
         id: "1",
-        author: "Teacher Admin",
+        author: "Учитель Иванов",
         role: "teacher",
-        title: "Добро пожаловать!",
-        content: "Наша платформа открыта для всех!",
-        createdAt: "2025-01-10T09:30:00.000Z"
+        title: "Новая методика по математике",
+        content: "Учимся решать задачи интересным способом...",
+        createdAt: "2023-03-10T09:00:00.000Z",
+        image: img,
     },
     {
         id: "2",
-        author: "Teacher Admin",
+        author: "Admin",
         role: "teacher",
-        title: "Важное объявление",
-        content: "Завтра лекция по Математике отменяется!",
-        createdAt: "2025-01-15T12:00:00.000Z"
+        title: "Школьный праздник",
+        content: "Приглашаем всех на день открытых дверей...",
+        createdAt: "2023-03-15T15:30:00.000Z",
+        image: "",
     },
 ];
 
-// Вспомогательная функция для сохранения массива новостей
+/**
+ * Функция сохраняет список новостей в localStorage по ключу NEWS_KEY.
+ * @param {Array} list - массив новостей
+ */
 function saveNewsList(list) {
     localStorage.setItem(NEWS_KEY, JSON.stringify(list));
 }
 
-// Получить все новости (если нет - записать initialNews)
+/**
+ * Получить все новости из localStorage.
+ * Если там ничего нет, используется массив initialNews,
+ * который записывается в localStorage и затем возвращается.
+ * @returns {Array} список новостей
+ */
 export function getAllNews() {
     const data = localStorage.getItem(NEWS_KEY);
     if (!data) {
@@ -41,31 +58,46 @@ export function getAllNews() {
     }
 }
 
-// Создать новость
+/**
+ * Создать новость и сохранить в localStorage.
+ * @param {Object} newsData - данные новости
+ * @returns {Object} созданная новость (с присвоенным id)
+ */
 export function createNews(newsData) {
     const list = getAllNews();
-    const newId = String(Date.now());
+    const newId = String(Date.now()); // простое уникальное значение
     const newPost = {
         id: newId,
         ...newsData,
     };
-    list.unshift(newPost); // добавим в начало, чтобы сразу шло сверху
+    // Добавим новость в начало списка:
+    list.unshift(newPost);
     saveNewsList(list);
     return newPost;
 }
 
-// Обновить существующую новость
+/**
+ * Обновить существующую новость.
+ * @param {string} id - идентификатор новости
+ * @param {Object} updates - поля, которые нужно изменить
+ * @returns {Object|null} обновлённая новость или null, если не найдена
+ */
 export function updateNews(id, updates) {
     const list = getAllNews();
     const index = list.findIndex((item) => item.id === id);
-    if (index === -1) return null;
-
+    if (index === -1) {
+        console.warn(`Новость с id=${id} не найдена`);
+        return null;
+    }
     list[index] = { ...list[index], ...updates };
     saveNewsList(list);
     return list[index];
 }
 
-// Удалить новость
+/**
+ * Удалить новость по её id.
+ * @param {string} id - идентификатор новости
+ */
 export function deleteNews(id) {
     let list = getAllNews();
     list = list.filter((item) => item.id !== id);
