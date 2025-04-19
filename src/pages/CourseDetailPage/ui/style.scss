@@ -1,0 +1,31 @@
+.coursePage {
+  padding: 16px;
+}
+
+.card-silka {
+  max-width: 500px;
+}
+
+@media (max-width: 576px) {
+  .coursePage {
+    padding: 8px;
+
+    .ant-card-body {
+      padding: 10px;
+    }
+  }
+
+  .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .ant-btn {
+    font-size: 14px;
+    padding: 4px 8px;
+  }
+
+  .ant-modal {
+    width: 95% !important;
+    max-width: 600px;
+  }
+}

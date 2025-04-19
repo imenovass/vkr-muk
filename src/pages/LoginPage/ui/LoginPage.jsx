@@ -1,14 +1,11 @@
 import React, { useState } from "react";
-import "./styles.scss"; // SCSS со стилями
-import { Card, Form, Input, Button, Typography, Alert } from "antd";
+import { Form, Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { loginFx } from "../../../features/auth/model/pbAuth";
 import { setSession } from "../../../features/auth/model/session";
 
-// Импортируем картинку
-import img from "../../../assets/img/login.jpg";
-
-const { Title } = Typography;
+import "./styles.scss";
+import Logo from "../../../shared/ui/Logo/Logo";
 
 export const LoginPage = () => {
     const navigate = useNavigate();
@@ -27,41 +24,45 @@ export const LoginPage = () => {
     };
 
     return (
-        <div className="login-page-container">
-            {/* Левая часть — форма логина */}
-            <div className="login-section">
-                <Card className="login-card">
-                    <Title level={2} className="login-title">
-                        Вход в систему
-                    </Title>
-                    {error && <Alert message={error} type="error" className="login-alert" />}
-                    <Form layout="vertical" onFinish={onFinish}>
-                        <Form.Item
-                            label="Логин"
-                            name="login"
-                            rules={[{ required: true, message: "Введите логин" }]}
-                        >
-                            <Input placeholder="teacher или student" />
-                        </Form.Item>
-                        <Form.Item
-                            label="Пароль"
-                            name="password"
-                            rules={[{ required: true, message: "Введите пароль" }]}
-                        >
-                            <Input.Password placeholder="teacher или 12345" />
-                        </Form.Item>
-                        <Form.Item>
-                            <Button type="primary" htmlType="submit" block>
-                                Войти
-                            </Button>
-                        </Form.Item>
-                    </Form>
-                </Card>
-            </div>
+        <div className="login-container">
+            <Logo />
 
-            <div className="image-section">
-                <img src={img} alt="Login Illustration" />
-            </div>
+            {/* Заголовок */}
+            <h2 className="welcome-title">Добро пожаловать</h2>
+            <p className="welcome-subtitle">
+                Пожалуйста, войдите в систему, используя<br />
+                предоставленные Вам данные:
+            </p>
+
+            {/* Форма входа */}
+            <Form layout="vertical" onFinish={onFinish} className="login-form">
+                {error && <p className="error-text">{error}</p>}
+
+                <Form.Item
+                    name="login"
+                    rules={[{ required: true, message: "Введите логин" }]}
+                >
+                    <Input placeholder="Логин" />
+                </Form.Item>
+
+                <Form.Item
+                    name="password"
+                    rules={[{ required: true, message: "Введите пароль" }]}
+                >
+                    <Input.Password placeholder="Пароль" />
+                </Form.Item>
+
+                <Form.Item>
+                    <Button type="primary" htmlType="submit" block>
+                        Далее
+                    </Button>
+                </Form.Item>
+            </Form>
+
+            <p className="footer-text">
+                Если Вы не помните логин или пароль,<br />
+                пожалуйста, обратитесь к администратору.
+            </p>
         </div>
     );
 };

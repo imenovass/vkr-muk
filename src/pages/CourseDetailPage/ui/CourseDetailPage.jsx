@@ -20,6 +20,7 @@ import {
     InboxOutlined,
     EditOutlined
 } from "@ant-design/icons";
+
 import { getSession } from "../../../features/auth/model/session";
 import {
     getCourseById,
@@ -32,6 +33,8 @@ import {
     deleteCourse,
     addMaterialCompletion
 } from "../../../entities/course/model/courseStorage";
+
+import "./style.scss"
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -48,7 +51,7 @@ export const CourseDetailPage = () => {
     const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
     const [materialForm] = Form.useForm();
     const [materialFile, setMaterialFile] = useState(null);
-
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
     // 2) Редактирование материала
     const [isEditMaterialModalOpen, setIsEditMaterialModalOpen] = useState(false);
     const [editMaterialForm] = Form.useForm();
@@ -94,6 +97,14 @@ export const CourseDetailPage = () => {
         setIsReflectionModalOpen(false);
         setCurrentMaterialId(null);
         reflectionForm.resetFields();
+    };
+
+    const base64ToBlobUrl = (base64Data, contentType = "application/pdf") => {
+        const byteCharacters = atob(base64Data.split(",")[1]);
+        const byteNumbers = Array.from(byteCharacters, (char) => char.charCodeAt(0));
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: contentType });
+        return URL.createObjectURL(blob);
     };
 
     const handleReflectionSubmit = async () => {
@@ -183,23 +194,20 @@ export const CourseDetailPage = () => {
         try {
             await materialForm.validateFields();
             const { title, url } = materialForm.getFieldsValue();
-            if (!title) {
-                message.error("Название материала обязательно!");
-                return;
-            }
-            // Файл может быть необязательным — если вы хотите
+
             let fileBase64 = "";
             if (materialFile) {
                 fileBase64 = await fileToBase64(materialFile);
             }
-            // Создаём материал
+
             addMaterial(courseId, {
                 title,
                 url,
-                fileData: fileBase64,
+                fileData: fileBase64, // <-- base64 PDF
                 authorId: user.username,
                 createdAt: new Date().toISOString(),
             });
+
             message.success("Материал добавлен!");
             closeMaterialModal();
             reloadCourse();
@@ -207,6 +215,8 @@ export const CourseDetailPage = () => {
             console.error(err);
         }
     };
+
+
 
     // =======================
     // (R)ead материалов — см. ниже в renderMaterialsTab
@@ -334,13 +344,53 @@ export const CourseDetailPage = () => {
         });
     };
 
-    // =======================
-    // Рендер таба "Материалы"
-    // =======================
+    function openPdfInNewTab(base64Pdf) {
+        // 1) Разбиваем "data:application/pdf;base64,..." на заголовок и собственно base64-данные
+        const [header, base64String] = base64Pdf.split(",");
+
+        // 2) Декодируем base64 в бинарный массив
+        const byteCharacters = atob(base64String);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+
+        // 3) Создаём Blob (PDF)
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+
+        // 4) Создаём Blob-URL
+        const blobUrl = URL.createObjectURL(blob);
+
+        // 5) Открываем пустое окно
+        const pdfWindow = window.open("", "_blank");
+        if (!pdfWindow) {
+            // Возможно, popup-блокировщик не дал открыть окно
+            alert("Окно было заблокировано браузером. Разрешите всплывающие окна (popups).");
+            return;
+        }
+
+        // 6) Пишем HTML с <iframe>, указывая в src наш blobUrl
+        pdfWindow.document.write(`
+    <html>
+    <head><title>PDF Preview</title></head>
+    <body style="margin:0">
+      <iframe
+        width="100%"
+        height="100%"
+        style="border:none"
+        src="${blobUrl}"
+      ></iframe>
+    </body>
+    </html>
+  `);
+    }
+
+
+
     const renderMaterialsTab = () => {
         return (
             <div style={{ padding: 16 }}>
-                {/* Кнопка "Создать материал" - только teacher */}
                 {user.role === "teacher" && (
                     <Button
                         type="primary"
@@ -354,12 +404,10 @@ export const CourseDetailPage = () => {
                 {course.materials?.length === 0 && <p>Материалов нет</p>}
 
                 <List
-                    grid={{ gutter: 16, column: 2 }}
                     dataSource={course.materials}
                     renderItem={(material) => {
                         const actions = [];
                         if (user.role === "teacher") {
-                            // Кнопка "Редактировать"
                             actions.push(
                                 <Button
                                     type="link"
@@ -367,7 +415,6 @@ export const CourseDetailPage = () => {
                                     onClick={() => openEditMaterialModal(material)}
                                 />
                             );
-                            // Кнопка "Удалить"
                             actions.push(
                                 <Popconfirm
                                     title="Удалить материал?"
@@ -383,9 +430,9 @@ export const CourseDetailPage = () => {
                                 <Card
                                     title={material.title}
                                     actions={actions}
-                                    style={{ width: "100%" }}
+                                    className="card-silka"
                                 >
-                                    {/* Если есть URL */}
+
                                     {material.url && (
                                         <p>
                                             Ссылка:{" "}
@@ -397,18 +444,14 @@ export const CourseDetailPage = () => {
 
                                     <p>Автор: {material.authorId}</p>
 
-                                    {/* Если есть файл, даём кнопку "Открыть файл" */}
+
                                     {material.fileData && (
-                                        <Button
-                                            type="link"
-                                            onClick={() => {
-                                                const newWindow = window.open(material.fileData, "_blank");
-                                                if (newWindow) newWindow.opener = null;
-                                            }}
-                                        >
-                                            Открыть файл
+                                        <Button onClick={() => openPdfInNewTab(material.fileData)}>
+                                            Посмотреть документ
                                         </Button>
+
                                     )}
+
                                 </Card>
                             </List.Item>
                         );
@@ -461,26 +504,20 @@ export const CourseDetailPage = () => {
                 )}
 
                 <List
+
                     dataSource={visibleSubmissions}
                     renderItem={(sub) => {
                         const isAuthor = sub.studentId === user.username;
                         return (
                             <List.Item>
-                                <Card style={{ width: "100%" }}>
+                                <Card                    className="card-silka">
                                     <p>
                                         <b>Студент:</b> {sub.studentId}
                                     </p>
                                     <p>{sub.comment}</p>
                                     <p>
-                                        <Button
-                                            type="link"
-                                            onClick={() => {
-                                                // Открыть файл в новой вкладке
-                                                const newWindow = window.open(sub.fileData, "_blank");
-                                                if (newWindow) newWindow.opener = null;
-                                            }}
-                                        >
-                                            Посмотреть файл
+                                        <Button onClick={() => openPdfInNewTab(sub.fileData)}>
+                                            Посмотреть документ
                                         </Button>
                                     </p>
                                     {sub.grade ? (
@@ -501,7 +538,6 @@ export const CourseDetailPage = () => {
                                         </Button>
                                     )}
 
-                                    {/* Студент (автор) видит, что это его работа */}
                                     {user.role === "student" && isAuthor && (
                                         <p style={{ fontSize: 12, color: "#999" }}>
                                             (Вы загрузили эту работу)
@@ -516,12 +552,8 @@ export const CourseDetailPage = () => {
         );
     };
 
-
-
-
     return (
-        <div style={{ padding: 16 }}>
-            {/* ====== Блок: Название / Описание / URL курса ====== */}
+        <div className="coursePage">
             <div
                 style={{
                     marginBottom: 16,
@@ -531,7 +563,6 @@ export const CourseDetailPage = () => {
                 }}
             >
                 <h2 style={{ marginBottom: 8 }}>{course.title}</h2>
-                {/* Если есть url */}
                 {course.url && (
                     <p style={{ marginBottom: 8 }}>
                         Ссылка:{" "}
@@ -542,7 +573,6 @@ export const CourseDetailPage = () => {
                 )}
                 <p style={{ margin: 0 }}>{course.description}</p>
 
-                {/* Кнопки "Редактировать" / "Удалить" - только teacher */}
                 {user.role === "teacher" && (
                     <div style={{ marginTop: 16 }}>
                         <Button style={{ marginRight: 8 }} onClick={openEditModal}>
@@ -555,7 +585,6 @@ export const CourseDetailPage = () => {
                 )}
             </div>
 
-            {/* ====== Блок: Участники (только teacher) ====== */}
             {user.role === "teacher" && (
                 <div
                     style={{
@@ -659,9 +688,17 @@ export const CourseDetailPage = () => {
                         <Input placeholder="https://example.com/something" />
                     </Form.Item>
                 </Form>
+
+                {/* Dragger: только PDF */}
                 <Dragger
+                    accept="application/pdf"                     // <-- только PDF
                     multiple={false}
                     beforeUpload={(file) => {
+                        if (file.type !== "application/pdf") {
+                            message.error("Можно загрузить только PDF-файлы!");
+                            return Upload.LIST_IGNORE; // Отклоняем загрузку
+                        }
+                        // Если всё ок — сохраняем в state, но не загружаем
                         setMaterialFile(file);
                         return false; // отключаем автозагрузку
                     }}
@@ -670,9 +707,10 @@ export const CourseDetailPage = () => {
                     <p className="ant-upload-drag-icon">
                         <InboxOutlined />
                     </p>
-                    <p>Нажмите или перетащите файл</p>
+                    <p>Нажмите или перетащите PDF-файл</p>
                 </Dragger>
             </Modal>
+
 
             {/* ============================= */}
             {/* Модалка: Редактировать материал (Update) */}

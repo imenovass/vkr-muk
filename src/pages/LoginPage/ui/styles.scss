@@ -1,56 +1,46 @@
-.login-page-container {
-  display: flex;
-  flex-direction: row;
-  height: 100vh; // Занять всю высоту экрана
+.login-container {
+  width: 100%;
+  max-width: 400px; /* чтобы форма не растягивалась на весь экран */
+  margin: 0 auto;    /* центрируем по горизонтали */
+  padding: 2rem 1rem;
+  text-align: center;
+  box-sizing: border-box;
 
-  .login-section {
-    width: 45%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    // Отступы по желанию
-    padding: 2rem;
-  }
-
-  .image-section {
-    width: 55%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden; // чтобы не было полосы прокрутки, если картинка больше контейнера
-
-    img {
-      width: 100%;
-      height: auto;
-      object-fit: cover; // чтобы картинка масштабировалась по контейнеру (если требуется)
+  .logo {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    span {
+      font-weight: 400; // например, меньшая толщина
     }
   }
-}
 
-@media (max-width: 768px) {
-  .login-page-container {
-    flex-direction: column;
+  .welcome-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
   }
 
-  .login-section {
-    width: 100% !important;
+  .welcome-subtitle {
+    margin-bottom: 2rem;
+    color: #555;
+    line-height: 1.4;
   }
 
-  .image-section {
-    display: none !important;
+  .login-form {
+    text-align: left;
+    .ant-form-item {
+      margin-bottom: 1rem;
+    }
   }
-}
 
-.login-card {
-  width: 100%;
-  max-width: 400px;
-}
+  .error-text {
+    color: red;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
 
-.login-title {
-  text-align: center;
-  margin-bottom: 1.5rem; // пример отступа
-}
-
-.login-alert {
-  margin-bottom: 16px;
+  .footer-text {
+    margin-top: 2rem;
+    color: #555;
+    line-height: 1.4;
+  }
 }

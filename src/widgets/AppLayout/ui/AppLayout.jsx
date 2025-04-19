@@ -13,16 +13,20 @@ import { getSession, clearSession } from "../../../features/auth/model/session";
 import { breadcrumbNameMap } from "../../../shared/config/breadcrumbs";
 import Logo from "../../../shared/ui/Logo/Logo";
 
+import "./styles.scss"
+
 const { Sider, Header, Content } = Layout;
 
 export const AppLayout = () => {
+    const [collapsed, setCollapsed] = React.useState(false);
+
     const navigate = useNavigate();
     const location = useLocation();
     const user = getSession();
 
     const menuItems = [
         {
-            key: "/", // соответствует selectedKey
+            key: "/",
             icon: <HomeOutlined />,
             label: <NavLink to="/">Главная</NavLink>,
         },
@@ -48,47 +52,46 @@ export const AppLayout = () => {
         },
     ];
 
-
     React.useEffect(() => {
         if (!user) {
             navigate("/login");
         }
     }, [user, navigate]);
 
+    // Если роль "teacher", добавляем пункт
+    if (user?.role === "teacher") {
+        menuItems.push({
+            key: "/teacher-zone",
+            icon: <PieChartOutlined />,
+            label: <NavLink to="/teacher-zone">Для преподавателя</NavLink>,
+        });
+    }
 
     // Логика меню (подсветка пункта)
     const selectedKey = `/${location.pathname.split("/")[1]}`;
 
     // --- Хлебные крошки ---
-    // Разбиваем текущий путь на сегменты
     const pathSnippets = location.pathname.split("/").filter(Boolean);
-
-    // Формируем <Breadcrumb.Item> для каждого сегмента
     const extraBreadcrumbItems = pathSnippets.map((segment, index) => {
         const url = "/" + pathSnippets.slice(0, index + 1).join("/");
-
         let name = breadcrumbNameMap[url];
-        // Если, например, /courses/123 → «Детали курса (ID: 123)»
+
+        // Пример динамического имени
         if (!name && index > 0 && pathSnippets[0] === "courses") {
             name = `Детали курса (ID: ${segment})`;
         }
         if (!name && index > 0 && pathSnippets[0] === "students") {
-            // Например, second snippet — это имя студента
             name = `Студент: ${segment}`;
         }
-        // Если не нашли в словаре – используем сам segment
         if (!name) {
             name = segment;
         }
-
         return (
             <Breadcrumb.Item key={url}>
                 <NavLink to={url}>{name}</NavLink>
             </Breadcrumb.Item>
         );
     });
-
-    // Добавляем пункт "Главная"
     const breadcrumbItems = [
         <Breadcrumb.Item key="home">
             <NavLink to="/">Главная</NavLink>
@@ -101,26 +104,24 @@ export const AppLayout = () => {
         navigate("/login");
     };
 
-    if (user?.role === "teacher") {
-        menuItems.push({
-            key: "/teacher-zone",
-            icon: <PieChartOutlined />,
-            label: <NavLink to="/teacher-zone">Для преподавателя</NavLink>,
-        });
-    }
+    console.log("user", user)
 
     return (
         <Layout style={{ minHeight: "100vh" }}>
-            {/* Фиксированный Sider */}
             <Sider
                 width={200}
                 collapsible
+                collapsed={collapsed}
+                breakpoint="md"             // "md" = 768px
+                onBreakpoint={(broken) => setCollapsed(broken)}
+                collapsedWidth={80}         // Можно установить 0, если нужно полностью скрывать
+                trigger={null}             // Убирает стандартную стрелку снизу
                 style={{
                     position: "fixed",
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    overflow: "auto", // Если меню длинное, появляется скролл в самом Sider
+                    overflow: "auto",
                 }}
             >
                 <Logo />
@@ -132,7 +133,7 @@ export const AppLayout = () => {
                 />
             </Sider>
 
-            <Layout style={{ marginLeft: 200 }}>
+            <Layout style={{ marginLeft: collapsed ? 80 : 200 }}>
                 <Header
                     style={{
                         background: "#fff",
@@ -141,21 +142,30 @@ export const AppLayout = () => {
                         justifyContent: "space-between",
                         alignItems: "center",
                         borderBottom: "1px solid #f0f0f0",
+                        transition: "margin-left 0.2s",
                     }}
                 >
-                    {/* Хлебные крошки */}
                     <Breadcrumb>{breadcrumbItems}</Breadcrumb>
 
-                    {/* Имя пользователя + Logout */}
-                    <div>
-                        {user?.fullName} ({user?.role}) |{" "}
-                        <span style={{ cursor: "pointer", color: "#1890ff" }} onClick={handleLogout}>
+                    <div className="name">
+                        <UserOutlined />
+                        <div className="username"> {user?.username} |</div>
+                        <div
+                            style={{ cursor: "pointer", color: "#1890ff" }}
+                            onClick={handleLogout}
+                        >
               Выйти
-            </span>
+            </div>
                     </div>
                 </Header>
 
-                <Content style={{ margin: "16px", minHeight: "100vh", overflow: "auto" }}>
+                <Content
+                    style={{
+                        margin: "16px",
+                        minHeight: "100vh",
+                        overflow: "auto",
+                    }}
+                >
                     <Outlet />
                 </Content>
             </Layout>

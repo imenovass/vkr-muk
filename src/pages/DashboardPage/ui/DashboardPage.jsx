@@ -1,6 +1,6 @@
 // pages/DashboardPage/ui/DashboardPage.jsx
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Typography, Button } from "antd";
+import { Row, Typography } from "antd";
 import { getSession } from "../../../features/auth/model/session";
 import { getAllCourses } from "../../../entities/course/model/courseStorage";
 import { getAllSchedule } from "../../../entities/schedule/model/scheduleStorage";
@@ -57,12 +57,9 @@ export const DashboardPage = () => {
         }
     }, []);
 
-    // Подсчитаем, сколько курсов ведёт преподаватель (teacher) и т.д.
-
-
     return (
         <div style={{ padding: "16px" }}>
-            <Title level={2}>Добро пожаловать, {user?.fullName}!</Title>
+            <Title level={2}>Добро пожаловать {user?.username}!</Title>
             <Text>
                 Ваша роль: <b>{user?.role === "teacher" ? "Преподаватель" : "Студент"}</b>
             </Text>
@@ -90,13 +87,6 @@ export const DashboardPage = () => {
                     link="#/schedule"
                     linkText="Посмотреть расписание"
                 />
-
-                {/*<DashboardCard*/}
-                {/*    title="Материалы"*/}
-                {/*    value="Здесь можно показать количество материалов и т.д."*/}
-                {/*    link="#/teacher-zone"*/}
-                {/*    linkText="Управлять материалами (Teacher Zone)"*/}
-                {/*/>*/}
             </Row>
             <NewsPage />
         </div>

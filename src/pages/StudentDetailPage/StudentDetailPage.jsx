@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Table, message } from "antd";
+import { Table, message, List, Grid } from "antd";
 import { getAllCourses } from "../../entities/course/model/courseStorage";
 import { getSession } from "../../features/auth/model/session";
 
@@ -11,6 +11,11 @@ export const StudentDetailPage = () => {
 
     const [coursesData, setCoursesData] = useState([]);
 
+    // Хук для определения брейкпоинтов
+    const breakpoints = Grid.useBreakpoint();
+    // Если экран уже md — считаем "десктопом", иначе — "мобильным".
+    const isMobile = !breakpoints.md;
+
     useEffect(() => {
         const courses = getAllCourses();
         if (!courses || courses.length === 0) {
@@ -19,7 +24,7 @@ export const StudentDetailPage = () => {
             return;
         }
 
-        // Проверка прав (если студент – смотрит чужую страницу)
+        // Проверка прав (если студент и пытается смотреть чужую страницу)
         if (user?.role === "student" && username !== user?.username) {
             message.error("Нет прав для просмотра профиля другого студента");
             navigate("/students");
@@ -27,14 +32,14 @@ export const StudentDetailPage = () => {
         }
 
         // Отбираем все курсы, где данный студент есть в participants
-        const studentCourses = courses.filter(course =>
-            (course.participants || []).includes(username)
+        const studentCourses = courses.filter((course) =>
+          (course.participants || []).includes(username)
         );
 
-        // Для каждого курса определяем оценку (целое число) и количество работ
-        const detailed = studentCourses.map(course => {
+        // Для каждого курса находим последнюю работу и оценку
+        const detailed = studentCourses.map((course) => {
             const { submissions = [], title, id } = course;
-            const studentSubs = submissions.filter(sub => sub.studentId === username);
+            const studentSubs = submissions.filter((sub) => sub.studentId === username);
 
             // Если нет работ, пишем "Нет оценок"
             if (studentSubs.length === 0) {
@@ -46,14 +51,12 @@ export const StudentDetailPage = () => {
                 };
             }
 
-            // Допустим, берём последнюю работу
+            // Берём последнюю работу
             const lastSubmission = studentSubs[studentSubs.length - 1];
             const rawGrade = lastSubmission?.grade;
 
-            // Парсим в целое число
             let finalGrade = "Нет оценок";
             if (rawGrade) {
-                // parseInt вернёт целое число, если там "4" или "5"
                 const intGrade = parseInt(rawGrade, 10);
                 finalGrade = isNaN(intGrade) ? "Нет оценок" : intGrade;
             }
@@ -72,14 +75,14 @@ export const StudentDetailPage = () => {
     // Если нет курсов
     if (coursesData.length === 0) {
         return (
-            <div style={{ padding: 16 }}>
-                <h2>Студент: {username}</h2>
-                <p>Не найдено курсов, на которые записан данный студент</p>
-            </div>
+          <div style={{ padding: 16 }}>
+              <h2>Студент: {username}</h2>
+              <p>Не найдено курсов, на которые записан данный студент</p>
+          </div>
         );
     }
 
-    // Колонки таблицы
+    // Колонки таблицы для десктопной версии
     const columns = [
         {
             title: "Курс",
@@ -99,16 +102,45 @@ export const StudentDetailPage = () => {
     ];
 
     return (
-        <div style={{ padding: 16 }}>
-            <h2>Информация по студенту: {username}</h2>
-            <Table
-                columns={columns}
-                dataSource={coursesData.map((item, idx) => ({
-                    key: `${item.courseId}-${idx}`,
-                    ...item,
-                }))}
-                pagination={false}
+      <div style={{ padding: 16 }}>
+          <h2>Информация по студенту: {username}</h2>
+
+          {/* Рендерим либо таблицу, либо список, в зависимости от isMobile */}
+          {isMobile ? (
+            <List
+              dataSource={coursesData}
+              renderItem={(item, idx) => (
+                <List.Item key={`${item.courseId}-${idx}`}>
+                    <List.Item.Meta
+                      title={
+                          <div>
+                              <strong>Курс:</strong> {item.courseTitle}
+                          </div>
+                      }
+                      description={
+                          <div>
+                              <div>
+                                  <strong>Сдано работ:</strong> {item.submissionsCount}
+                              </div>
+                              <div>
+                                  <strong>Оценка:</strong> {item.grade}
+                              </div>
+                          </div>
+                      }
+                    />
+                </List.Item>
+              )}
             />
-        </div>
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={coursesData.map((item, idx) => ({
+                  key: `${item.courseId}-${idx}`,
+                  ...item,
+              }))}
+              pagination={false}
+            />
+          )}
+      </div>
     );
 };
