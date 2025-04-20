@@ -12,29 +12,29 @@ import {
     Card,
     Select,
     Avatar,
-    Popconfirm
+    Popconfirm,
 } from "antd";
 import {
     UserOutlined,
     DeleteOutlined,
     InboxOutlined,
-    EditOutlined
+    EditOutlined,
 } from "@ant-design/icons";
 
 import { getSession } from "../../../features/auth/model/session";
 import {
     getCourseById,
     addMaterial,
-    updateMaterial,     // <-- если вы добавили в storage
-    deleteMaterial,     // <-- если вы добавили в storage
+    updateMaterial,
+    deleteMaterial,
     addSubmission,
     setSubmissionGrade,
     updateCourse,
     deleteCourse,
-    addMaterialCompletion
+    addMaterialCompletion,
 } from "../../../entities/course/model/courseStorage";
 
-import "./style.scss"
+import "./style.scss";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -46,12 +46,13 @@ export const CourseDetailPage = () => {
 
     const [course, setCourse] = useState(null);
 
-    // ---- Модалки: материал (create), материал (edit), домашка, выставить оценку, редактировать курс ----
+    // Модалки
     // 1) Создание материала
     const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
     const [materialForm] = Form.useForm();
-    const [materialFile, setMaterialFile] = useState(null);
-    const [isViewerOpen, setIsViewerOpen] = useState(false);
+    // (важно!) Управляем списком файлов для материала
+    const [materialFileList, setMaterialFileList] = useState([]);
+
     // 2) Редактирование материала
     const [isEditMaterialModalOpen, setIsEditMaterialModalOpen] = useState(false);
     const [editMaterialForm] = Form.useForm();
@@ -60,7 +61,8 @@ export const CourseDetailPage = () => {
     // 3) Загрузка домашки (студент)
     const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
     const [submissionForm] = Form.useForm();
-    const [submissionFile, setSubmissionFile] = useState(null);
+    // (важно!) Управляем списком файлов для домашки
+    const [submissionFileList, setSubmissionFileList] = useState([]);
 
     // 4) Выставление оценки (учитель)
     const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
@@ -71,11 +73,11 @@ export const CourseDetailPage = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editForm] = Form.useForm();
 
+    // Оставить ответ к материалу
     const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
     const [reflectionForm] = Form.useForm();
     const [currentMaterialId, setCurrentMaterialId] = useState(null);
 
-    // Загрузка курса при монтировании / смене courseId
     useEffect(() => {
         reloadCourse();
     }, [courseId]);
@@ -88,6 +90,10 @@ export const CourseDetailPage = () => {
     if (!course) {
         return <div style={{ padding: 16 }}>Курс не найден</div>;
     }
+
+    // =======================
+    // Ответ по материалу (Reflection)
+    // =======================
     const openReflectionModal = (materialId) => {
         setCurrentMaterialId(materialId);
         reflectionForm.resetFields();
@@ -98,15 +104,6 @@ export const CourseDetailPage = () => {
         setCurrentMaterialId(null);
         reflectionForm.resetFields();
     };
-
-    const base64ToBlobUrl = (base64Data, contentType = "application/pdf") => {
-        const byteCharacters = atob(base64Data.split(",")[1]);
-        const byteNumbers = Array.from(byteCharacters, (char) => char.charCodeAt(0));
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: contentType });
-        return URL.createObjectURL(blob);
-    };
-
     const handleReflectionSubmit = async () => {
         try {
             const { reflection } = await reflectionForm.validateFields();
@@ -114,24 +111,21 @@ export const CourseDetailPage = () => {
                 message.error("Введите ответ!");
                 return;
             }
-            // Вызываем функцию из storage
             addMaterialCompletion(courseId, currentMaterialId, user.username, reflection);
             message.success("Ответ сохранён!");
             closeReflectionModal();
-            // Перезагружаем курс, чтобы увидеть обновлённый список
             reloadCourse();
         } catch (err) {
             console.error(err);
         }
     };
 
-
     // =======================
     // Удалить участника (teacher)
     // =======================
     const handleRemoveParticipant = (participantName) => {
         const updatedParticipants = course.participants.filter(
-            (p) => p !== participantName
+          (p) => p !== participantName
         );
         const updated = updateCourse(courseId, {
             participants: updatedParticipants,
@@ -141,10 +135,9 @@ export const CourseDetailPage = () => {
     };
 
     // =======================
-    // Редактировать / Удалить курс (teacher)
+    // Редактирование / Удалить курс (teacher)
     // =======================
     const openEditModal = () => {
-        // Заполняем форму текущими данными
         editForm.setFieldsValue({
             title: course.title,
             description: course.description,
@@ -158,9 +151,7 @@ export const CourseDetailPage = () => {
     };
     const handleEditCourse = async () => {
         try {
-            // Получаем поля из формы
             const { title, description, url } = await editForm.validateFields();
-            // Обновляем в localStorage
             const updated = updateCourse(courseId, { title, description, url });
             setCourse(updated);
             message.success("Курс обновлён!");
@@ -169,11 +160,9 @@ export const CourseDetailPage = () => {
             console.error(err);
         }
     };
-
     const handleDeleteCourse = () => {
         deleteCourse(courseId);
         message.success("Курс удалён!");
-        // Переходим обратно на список курсов
         navigate("/courses");
     };
 
@@ -181,29 +170,32 @@ export const CourseDetailPage = () => {
     // (C)reate материал (teacher)
     // =======================
     const openMaterialModal = () => {
+        // (важно!) сбрасываем форму и state списка файлов
         materialForm.resetFields();
-        setMaterialFile(null);
+        setMaterialFileList([]);
         setIsMaterialModalOpen(true);
     };
     const closeMaterialModal = () => {
         setIsMaterialModalOpen(false);
         materialForm.resetFields();
-        setMaterialFile(null);
+        setMaterialFileList([]);
     };
     const handleMaterialSubmit = async () => {
         try {
             await materialForm.validateFields();
             const { title, url } = materialForm.getFieldsValue();
 
+            // Берём первый загруженный файл, если он есть
             let fileBase64 = "";
-            if (materialFile) {
-                fileBase64 = await fileToBase64(materialFile);
+            if (materialFileList.length > 0) {
+                const fileObj = materialFileList[0].originFileObj;
+                fileBase64 = await fileToBase64(fileObj);
             }
 
             addMaterial(courseId, {
                 title,
                 url,
-                fileData: fileBase64, // <-- base64 PDF
+                fileData: fileBase64,
                 authorId: user.username,
                 createdAt: new Date().toISOString(),
             });
@@ -215,12 +207,6 @@ export const CourseDetailPage = () => {
             console.error(err);
         }
     };
-
-
-
-    // =======================
-    // (R)ead материалов — см. ниже в renderMaterialsTab
-    // =======================
 
     // =======================
     // (U)pdate материал (teacher)
@@ -246,8 +232,6 @@ export const CourseDetailPage = () => {
                 message.error("Название материала обязательно!");
                 return;
             }
-            // При редактировании можно не менять файл, либо сделать отдельную логику
-            // Для простоты — оставляем fileData как было
             const updated = updateMaterial(courseId, editingMaterialId, {
                 title,
                 url,
@@ -275,24 +259,26 @@ export const CourseDetailPage = () => {
     // Загрузить домашку (student)
     // =======================
     const openSubmissionModal = () => {
+        // (важно!) сбрасываем форму и стейт
         submissionForm.resetFields();
-        setSubmissionFile(null);
+        setSubmissionFileList([]);
         setIsSubmissionModalOpen(true);
     };
     const closeSubmissionModal = () => {
         setIsSubmissionModalOpen(false);
         submissionForm.resetFields();
-        setSubmissionFile(null);
+        setSubmissionFileList([]);
     };
     const handleSubmissionSubmit = async () => {
         try {
             await submissionForm.validateFields();
             const { comment } = submissionForm.getFieldsValue();
-            if (!submissionFile) {
+            if (submissionFileList.length === 0) {
                 message.error("Необходимо прикрепить файл домашки!");
                 return;
             }
-            const fileBase64 = await fileToBase64(submissionFile);
+            const fileObj = submissionFileList[0].originFileObj;
+            const fileBase64 = await fileToBase64(fileObj);
 
             addSubmission(courseId, {
                 studentId: user.username,
@@ -345,119 +331,100 @@ export const CourseDetailPage = () => {
     };
 
     function openPdfInNewTab(base64Pdf) {
-        // 1) Разбиваем "data:application/pdf;base64,..." на заголовок и собственно base64-данные
         const [header, base64String] = base64Pdf.split(",");
-
-        // 2) Декодируем base64 в бинарный массив
         const byteCharacters = atob(base64String);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
             byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-
-        // 3) Создаём Blob (PDF)
         const blob = new Blob([byteArray], { type: "application/pdf" });
-
-        // 4) Создаём Blob-URL
         const blobUrl = URL.createObjectURL(blob);
 
-        // 5) Открываем пустое окно
         const pdfWindow = window.open("", "_blank");
         if (!pdfWindow) {
-            // Возможно, popup-блокировщик не дал открыть окно
             alert("Окно было заблокировано браузером. Разрешите всплывающие окна (popups).");
             return;
         }
-
-        // 6) Пишем HTML с <iframe>, указывая в src наш blobUrl
         pdfWindow.document.write(`
-    <html>
-    <head><title>PDF Preview</title></head>
-    <body style="margin:0">
-      <iframe
-        width="100%"
-        height="100%"
-        style="border:none"
-        src="${blobUrl}"
-      ></iframe>
-    </body>
-    </html>
-  `);
+      <html>
+      <head><title>PDF Preview</title></head>
+      <body style="margin:0">
+        <iframe
+          width="100%"
+          height="100%"
+          style="border:none"
+          src="${blobUrl}"
+        ></iframe>
+      </body>
+      </html>
+    `);
     }
 
-
-
+    // =======================
+    // Рендер списка материалов
+    // =======================
     const renderMaterialsTab = () => {
         return (
-            <div style={{ padding: 16 }}>
-                {user.role === "teacher" && (
-                    <Button
-                        type="primary"
-                        onClick={openMaterialModal}
-                        style={{ marginBottom: 16 }}
-                    >
-                        Загрузить материал
-                    </Button>
-                )}
+          <div style={{ padding: 16 }}>
+              {user.role === "teacher" && (
+                <Button
+                  type="primary"
+                  onClick={openMaterialModal}
+                  style={{ marginBottom: 16 }}
+                >
+                    Загрузить материал
+                </Button>
+              )}
 
-                {course.materials?.length === 0 && <p>Материалов нет</p>}
+              {course.materials?.length === 0 && <p>Материалов нет</p>}
 
-                <List
-                    dataSource={course.materials}
-                    renderItem={(material) => {
-                        const actions = [];
-                        if (user.role === "teacher") {
-                            actions.push(
-                                <Button
-                                    type="link"
-                                    icon={<EditOutlined />}
-                                    onClick={() => openEditMaterialModal(material)}
-                                />
-                            );
-                            actions.push(
-                                <Popconfirm
-                                    title="Удалить материал?"
-                                    onConfirm={() => handleDeleteMaterial(material.id)}
-                                >
-                                    <Button type="link" danger icon={<DeleteOutlined />} />
-                                </Popconfirm>
-                            );
-                        }
-
-                        return (
-                            <List.Item>
-                                <Card
-                                    title={material.title}
-                                    actions={actions}
-                                    className="card-silka"
-                                >
-
-                                    {material.url && (
-                                        <p>
-                                            Ссылка:{" "}
-                                            <a href={material.url} target="_blank" rel="noreferrer">
-                                                {material.url}
-                                            </a>
-                                        </p>
-                                    )}
-
-                                    <p>Автор: {material.authorId}</p>
-
-
-                                    {material.fileData && (
-                                        <Button onClick={() => openPdfInNewTab(material.fileData)}>
-                                            Посмотреть документ
-                                        </Button>
-
-                                    )}
-
-                                </Card>
-                            </List.Item>
+              <List
+                dataSource={course.materials}
+                renderItem={(material) => {
+                    const actions = [];
+                    if (user.role === "teacher") {
+                        actions.push(
+                          <Button
+                            type="link"
+                            icon={<EditOutlined />}
+                            onClick={() => openEditMaterialModal(material)}
+                          />
                         );
-                    }}
-                />
-            </div>
+                        actions.push(
+                          <Popconfirm
+                            title="Удалить материал?"
+                            onConfirm={() => handleDeleteMaterial(material.id)}
+                          >
+                              <Button type="link" danger icon={<DeleteOutlined />} />
+                          </Popconfirm>
+                        );
+                    }
+
+                    return (
+                      <List.Item>
+                          <Card title={material.title} actions={actions} className="card-silka">
+                              {material.url && (
+                                <p>
+                                    Ссылка:{" "}
+                                    <a href={material.url} target="_blank" rel="noreferrer">
+                                        {material.url}
+                                    </a>
+                                </p>
+                              )}
+                              <p>Автор: {material.authorId}</p>
+
+                              {material.fileData && (
+                                <Button onClick={() => openPdfInNewTab(material.fileData)}>
+                                    Посмотреть документ
+                                </Button>
+                              )}
+                          </Card>
+                      </List.Item>
+                    );
+                }}
+              />
+          </div>
         );
     };
 
@@ -465,349 +432,349 @@ export const CourseDetailPage = () => {
     // Рендер таба "Домашние работы"
     // =======================
     const renderSubmissionsTab = () => {
-        // Определяем, какие работы показывать
-        const visibleSubmissions = user.role === "teacher"
+        const visibleSubmissions =
+          user.role === "teacher"
             ? course.submissions
             : (course.submissions || []).filter(
-                sub => sub.studentId === user.username
+              (sub) => sub.studentId === user.username
             );
 
-        // Если у учителя нет работ — показываем одно сообщение,
-        // если у студента — другое
         if (!visibleSubmissions || visibleSubmissions.length === 0) {
             return (
-                <div style={{ padding: 16 }}>
-                    {user.role === "student" ? (
-                        <p>Вы пока не загрузили ни одной работы.</p>
-                    ) : (
-                        <p>Пока никто не загрузил работы</p>
-                    )}
-                    {user.role === "student" && (
-                        <Button type="primary" onClick={openSubmissionModal}>
-                            Загрузить работу
-                        </Button>
-                    )}
-                </div>
+              <div style={{ padding: 16 }}>
+                  {user.role === "student" ? (
+                    <p>Вы пока не загрузили ни одной работы.</p>
+                  ) : (
+                    <p>Пока никто не загрузил работы</p>
+                  )}
+                  {user.role === "student" && (
+                    <Button type="primary" onClick={openSubmissionModal}>
+                        Загрузить работу
+                    </Button>
+                  )}
+              </div>
             );
         }
 
         return (
-            <div style={{ padding: 16 }}>
-                {user.role === "student" && (
-                    <Button
-                        type="primary"
-                        onClick={openSubmissionModal}
-                        style={{ marginBottom: 16 }}
-                    >
-                        Загрузить работу
-                    </Button>
-                )}
+          <div style={{ padding: 16 }}>
+              {user.role === "student" && (
+                <Button
+                  type="primary"
+                  onClick={openSubmissionModal}
+                  style={{ marginBottom: 16 }}
+                >
+                    Загрузить работу
+                </Button>
+              )}
 
-                <List
+              <List
+                dataSource={visibleSubmissions}
+                renderItem={(sub) => {
+                    const isAuthor = sub.studentId === user.username;
+                    return (
+                      <List.Item>
+                          <Card className="card-silka">
+                              <p>
+                                  <b>Студент:</b> {sub.studentId}
+                              </p>
+                              <p>{sub.comment}</p>
+                              <p>
+                                  <Button onClick={() => openPdfInNewTab(sub.fileData)}>
+                                      Посмотреть документ
+                                  </Button>
+                              </p>
+                              {sub.grade ? (
+                                <p style={{ color: "green" }}>
+                                    Оценка: <b>{sub.grade}</b>
+                                </p>
+                              ) : (
+                                <p style={{ color: "red" }}>Оценка не выставлена</p>
+                              )}
 
-                    dataSource={visibleSubmissions}
-                    renderItem={(sub) => {
-                        const isAuthor = sub.studentId === user.username;
-                        return (
-                            <List.Item>
-                                <Card                    className="card-silka">
-                                    <p>
-                                        <b>Студент:</b> {sub.studentId}
-                                    </p>
-                                    <p>{sub.comment}</p>
-                                    <p>
-                                        <Button onClick={() => openPdfInNewTab(sub.fileData)}>
-                                            Посмотреть документ
-                                        </Button>
-                                    </p>
-                                    {sub.grade ? (
-                                        <p style={{ color: "green" }}>
-                                            Оценка: <b>{sub.grade}</b>
-                                        </p>
-                                    ) : (
-                                        <p style={{ color: "red" }}>Оценка не выставлена</p>
-                                    )}
+                              {user.role === "teacher" && (
+                                <Button type="primary" onClick={() => openGradeModal(sub.id)}>
+                                    Поставить оценку
+                                </Button>
+                              )}
 
-                                    {/* Учитель может выставить оценку */}
-                                    {user.role === "teacher" && (
-                                        <Button
-                                            type="primary"
-                                            onClick={() => openGradeModal(sub.id)}
-                                        >
-                                            Поставить оценку
-                                        </Button>
-                                    )}
-
-                                    {user.role === "student" && isAuthor && (
-                                        <p style={{ fontSize: 12, color: "#999" }}>
-                                            (Вы загрузили эту работу)
-                                        </p>
-                                    )}
-                                </Card>
-                            </List.Item>
-                        );
-                    }}
-                />
-            </div>
+                              {user.role === "student" && isAuthor && (
+                                <p style={{ fontSize: 12, color: "#999" }}>
+                                    (Вы загрузили эту работу)
+                                </p>
+                              )}
+                          </Card>
+                      </List.Item>
+                    );
+                }}
+              />
+          </div>
         );
     };
 
     return (
-        <div className="coursePage">
-            <div
-                style={{
-                    marginBottom: 16,
-                    padding: 16,
-                    background: "#f5f5f5",
-                    borderRadius: 4,
-                }}
-            >
-                <h2 style={{ marginBottom: 8 }}>{course.title}</h2>
-                {course.url && (
-                    <p style={{ marginBottom: 8 }}>
-                        Ссылка:{" "}
-                        <a href={course.url} target="_blank" rel="noreferrer">
-                            {course.url}
-                        </a>
-                    </p>
-                )}
-                <p style={{ margin: 0 }}>{course.description}</p>
+      <div className="coursePage">
+          <div
+            style={{
+                marginBottom: 16,
+                padding: 16,
+                background: "#f5f5f5",
+                borderRadius: 4,
+            }}
+          >
+              <h2 style={{ marginBottom: 8 }}>{course.title}</h2>
+              {course.url && (
+                <p style={{ marginBottom: 8 }}>
+                    Ссылка:{" "}
+                    <a href={course.url} target="_blank" rel="noreferrer">
+                        {course.url}
+                    </a>
+                </p>
+              )}
+              <p style={{ margin: 0 }}>{course.description}</p>
 
-                {user.role === "teacher" && (
-                    <div style={{ marginTop: 16 }}>
-                        <Button style={{ marginRight: 8 }} onClick={openEditModal}>
-                            Редактировать
-                        </Button>
-                        <Button danger onClick={handleDeleteCourse}>
-                            Удалить
-                        </Button>
-                    </div>
+              {user.role === "teacher" && (
+                <div style={{ marginTop: 16 }}>
+                    <Button style={{ marginRight: 8 }} onClick={openEditModal}>
+                        Редактировать
+                    </Button>
+                    <Button danger onClick={handleDeleteCourse}>
+                        Удалить
+                    </Button>
+                </div>
+              )}
+          </div>
+
+          {user.role === "teacher" && (
+            <div
+              style={{
+                  marginBottom: 24,
+                  padding: 16,
+                  background: "#fafafa",
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+              }}
+            >
+                <h3>Участники курса:</h3>
+                {course.participants?.length > 0 ? (
+                  <List
+                    dataSource={course.participants}
+                    style={{ marginTop: 8 }}
+                    renderItem={(participant) => (
+                      <List.Item
+                        actions={[
+                            <Popconfirm
+                              title={`Удалить участника "${participant}"?`}
+                              okText="Да"
+                              cancelText="Нет"
+                              onConfirm={() => handleRemoveParticipant(participant)}
+                            >
+                                <Button type="link" danger icon={<DeleteOutlined />} />
+                            </Popconfirm>,
+                        ]}
+                      >
+                          <List.Item.Meta
+                            avatar={<Avatar icon={<UserOutlined />} />}
+                            title={participant}
+                            description="Участник курса"
+                          />
+                      </List.Item>
+                    )}
+                  />
+                ) : (
+                  <p>Пока нет участников</p>
                 )}
             </div>
+          )}
 
-            {user.role === "teacher" && (
-                <div
-                    style={{
-                        marginBottom: 24,
-                        padding: 16,
-                        background: "#fafafa",
-                        border: "1px solid #ddd",
-                        borderRadius: 4,
-                    }}
-                >
-                    <h3>Участники курса:</h3>
-                    {course.participants?.length > 0 ? (
-                        <List
-                            dataSource={course.participants}
-                            style={{ marginTop: 8 }}
-                            renderItem={(participant) => (
-                                <List.Item
-                                    actions={[
-                                        <Popconfirm
-                                            title={`Удалить участника "${participant}"?`}
-                                            okText="Да"
-                                            cancelText="Нет"
-                                            onConfirm={() => handleRemoveParticipant(participant)}
-                                        >
-                                            <Button
-                                                type="link"
-                                                danger
-                                                icon={<DeleteOutlined />}
-                                            />
-                                        </Popconfirm>,
-                                    ]}
-                                >
-                                    <List.Item.Meta
-                                        avatar={<Avatar icon={<UserOutlined />} />}
-                                        title={participant}
-                                        description="Участник курса"
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                    ) : (
-                        <p>Пока нет участников</p>
-                    )}
-                </div>
-            )}
+          <Tabs defaultActiveKey="materials">
+              <Tabs.TabPane tab="Материалы" key="materials">
+                  {renderMaterialsTab()}
+              </Tabs.TabPane>
+              <Tabs.TabPane tab="Домашние работы" key="submissions">
+                  {renderSubmissionsTab()}
+              </Tabs.TabPane>
+          </Tabs>
 
-            {/* ====== Табы: Материалы, Домашние работы ====== */}
-            <Tabs defaultActiveKey="materials">
-                <Tabs.TabPane tab="Материалы" key="materials">
-                    {renderMaterialsTab()}
-                </Tabs.TabPane>
-                <Tabs.TabPane tab="Домашние работы" key="submissions">
-                    {renderSubmissionsTab()}
-                </Tabs.TabPane>
-            </Tabs>
+          {/* ============================= */}
+          {/* Модалка: Редактировать курс */}
+          {/* ============================= */}
+          <Modal
+            title="Редактировать курс"
+            open={isEditModalOpen}
+            onCancel={closeEditModal}
+            onOk={handleEditCourse}
+          >
+              <Form layout="vertical" form={editForm}>
+                  <Form.Item
+                    label="Название курса"
+                    name="title"
+                    rules={[{ required: true, message: "Введите название" }]}
+                  >
+                      <Input />
+                  </Form.Item>
+                  <Form.Item label="Описание курса" name="description">
+                      <Input.TextArea rows={2} />
+                  </Form.Item>
+                  <Form.Item label="URL" name="url">
+                      <Input placeholder="Например: https://example.com" />
+                  </Form.Item>
+              </Form>
+          </Modal>
 
-            {/* ============================= */}
-            {/* Модалка: Редактировать курс */}
-            {/* ============================= */}
-            <Modal
-                title="Редактировать курс"
-                open={isEditModalOpen}
-                onCancel={closeEditModal}
-                onOk={handleEditCourse}
-            >
-                <Form layout="vertical" form={editForm}>
-                    <Form.Item
-                        label="Название курса"
-                        name="title"
-                        rules={[{ required: true, message: "Введите название" }]}
-                    >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label="Описание курса" name="description">
-                        <Input.TextArea rows={2} />
-                    </Form.Item>
-                    <Form.Item label="URL" name="url">
-                        <Input placeholder="Например: https://example.com" />
-                    </Form.Item>
-                </Form>
-            </Modal>
+          {/* ============================= */}
+          {/* Модалка: Создать материал (Create) */}
+          {/* ============================= */}
+          <Modal
+            title="Загрузить материал"
+            open={isMaterialModalOpen}
+            onCancel={closeMaterialModal}
+            onOk={handleMaterialSubmit}
+          >
+              <Form layout="vertical" form={materialForm}>
+                  <Form.Item
+                    label="Название материала"
+                    name="title"
+                    rules={[{ required: true, message: "Введите название" }]}
+                  >
+                      <Input />
+                  </Form.Item>
+                  <Form.Item label="URL (необязательно)" name="url">
+                      <Input placeholder="https://example.com/something" />
+                  </Form.Item>
+              </Form>
 
-            {/* ============================= */}
-            {/* Модалка: Создать материал (Create) */}
-            {/* ============================= */}
-            <Modal
-                title="Загрузить материал"
-                open={isMaterialModalOpen}
-                onCancel={closeMaterialModal}
-                onOk={handleMaterialSubmit}
-            >
-                <Form layout="vertical" form={materialForm}>
-                    <Form.Item
-                        label="Название материала"
-                        name="title"
-                        rules={[{ required: true, message: "Введите название" }]}
-                    >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label="URL (необязательно)" name="url">
-                        <Input placeholder="https://example.com/something" />
-                    </Form.Item>
-                </Form>
+              {/* (важно!) Контролируемый Upload */}
+              <Dragger
+                accept="application/pdf"
+                multiple={false}
+                fileList={materialFileList}
+                beforeUpload={(file) => {
+                    if (file.type !== "application/pdf") {
+                        message.error("Можно загрузить только PDF-файлы!");
+                        return Upload.LIST_IGNORE;
+                    }
+                    return true; // пропускаем в onChange
+                }}
+                onChange={(info) => {
+                    // Сами решаем, какие файлы оставить
+                    setMaterialFileList(info.fileList.slice(-1)); // оставим последний добавленный
+                }}
+              >
+                  <p className="ant-upload-drag-icon">
+                      <InboxOutlined />
+                  </p>
+                  <p>Нажмите или перетащите PDF-файл</p>
+              </Dragger>
+          </Modal>
 
-                {/* Dragger: только PDF */}
-                <Dragger
-                    accept="application/pdf"                     // <-- только PDF
-                    multiple={false}
-                    beforeUpload={(file) => {
-                        if (file.type !== "application/pdf") {
-                            message.error("Можно загрузить только PDF-файлы!");
-                            return Upload.LIST_IGNORE; // Отклоняем загрузку
-                        }
-                        // Если всё ок — сохраняем в state, но не загружаем
-                        setMaterialFile(file);
-                        return false; // отключаем автозагрузку
-                    }}
-                    onRemove={() => setMaterialFile(null)}
-                >
-                    <p className="ant-upload-drag-icon">
-                        <InboxOutlined />
-                    </p>
-                    <p>Нажмите или перетащите PDF-файл</p>
-                </Dragger>
-            </Modal>
+          {/* ============================= */}
+          {/* Модалка: Редактировать материал (Update) */}
+          {/* ============================= */}
+          <Modal
+            title="Редактировать материал"
+            open={isEditMaterialModalOpen}
+            onCancel={closeEditMaterialModal}
+            onOk={handleEditMaterial}
+          >
+              <Form layout="vertical" form={editMaterialForm}>
+                  <Form.Item
+                    label="Название материала"
+                    name="title"
+                    rules={[{ required: true, message: "Введите название" }]}
+                  >
+                      <Input />
+                  </Form.Item>
+                  <Form.Item label="URL" name="url">
+                      <Input placeholder="https://example.com/..." />
+                  </Form.Item>
+              </Form>
+          </Modal>
 
+          {/* ============================= */}
+          {/* Модалка: Загрузить домашку (Student) */}
+          {/* ============================= */}
+          <Modal
+            title="Загрузить работу"
+            open={isSubmissionModalOpen}
+            onCancel={closeSubmissionModal}
+            onOk={handleSubmissionSubmit}
+          >
+              <Form layout="vertical" form={submissionForm}>
+                  <Form.Item
+                    label="Комментарий"
+                    name="comment"
+                    rules={[{ required: true, message: "Введите комментарий" }]}
+                  >
+                      <Input />
+                  </Form.Item>
+              </Form>
+              <Dragger
+                multiple={false}
+                fileList={submissionFileList}
+                beforeUpload={(file) => {
+                    // Здесь можно проверить тип файла, размер и т.п.
+                    return true; // Пропустим в onChange
+                }}
+                onChange={(info) => {
+                    // берем только последний файл
+                    setSubmissionFileList(info.fileList.slice(-1));
+                }}
+              >
+                  <p className="ant-upload-drag-icon">
+                      <InboxOutlined />
+                  </p>
+                  <p>Нажмите или перетащите файл</p>
+              </Dragger>
+          </Modal>
 
-            {/* ============================= */}
-            {/* Модалка: Редактировать материал (Update) */}
-            {/* ============================= */}
-            <Modal
-                title="Редактировать материал"
-                open={isEditMaterialModalOpen}
-                onCancel={closeEditMaterialModal}
-                onOk={handleEditMaterial}
-            >
-                <Form layout="vertical" form={editMaterialForm}>
-                    <Form.Item
-                        label="Название материала"
-                        name="title"
-                        rules={[{ required: true, message: "Введите название" }]}
-                    >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label="URL" name="url">
-                        <Input placeholder="https://example.com/..." />
-                    </Form.Item>
-                </Form>
-            </Modal>
+          {/* ============================= */}
+          {/* Модалка: Поставить оценку (Teacher) */}
+          {/* ============================= */}
+          <Modal
+            title="Поставить оценку"
+            open={isGradeModalOpen}
+            onCancel={closeGradeModal}
+            onOk={handleSetGrade}
+          >
+              <Form layout="vertical" form={gradeForm}>
+                  <Form.Item
+                    label="Оценка"
+                    name="grade"
+                    rules={[{ required: true, message: "Введите оценку" }]}
+                  >
+                      <Select>
+                          <Select.Option value="5">5</Select.Option>
+                          <Select.Option value="4">4</Select.Option>
+                          <Select.Option value="3">3</Select.Option>
+                          <Select.Option value="2">2</Select.Option>
+                      </Select>
+                  </Form.Item>
+              </Form>
+          </Modal>
 
-            {/* ============================= */}
-            {/* Модалка: Загрузить домашку (Student) */}
-            {/* ============================= */}
-            <Modal
-                title="Загрузить работу"
-                open={isSubmissionModalOpen}
-                onCancel={closeSubmissionModal}
-                onOk={handleSubmissionSubmit}
-            >
-                <Form layout="vertical" form={submissionForm}>
-                    <Form.Item
-                        label="Комментарий"
-                        name="comment"
-                        rules={[{ required: true, message: "Введите комментарий" }]}
-                    >
-                        <Input />
-                    </Form.Item>
-                </Form>
-                <Dragger
-                    multiple={false}
-                    beforeUpload={(file) => {
-                        setSubmissionFile(file);
-                        return false;
-                    }}
-                    onRemove={() => setSubmissionFile(null)}
-                >
-                    <p className="ant-upload-drag-icon">
-                        <InboxOutlined />
-                    </p>
-                    <p>Нажмите или перетащите файл</p>
-                </Dragger>
-            </Modal>
-
-            {/* ============================= */}
-            {/* Модалка: Поставить оценку (Teacher) */}
-            {/* ============================= */}
-            <Modal
-                title="Поставить оценку"
-                open={isGradeModalOpen}
-                onCancel={closeGradeModal}
-                onOk={handleSetGrade}
-            >
-                <Form layout="vertical" form={gradeForm}>
-                    <Form.Item
-                        label="Оценка"
-                        name="grade"
-                        rules={[{ required: true, message: "Введите оценку" }]}
-                    >
-                        <Select>
-                            <Select.Option value="5">5</Select.Option>
-                            <Select.Option value="4">4</Select.Option>
-                            <Select.Option value="3">3</Select.Option>
-                            <Select.Option value="2">2</Select.Option>
-                        </Select>
-                    </Form.Item>
-                </Form>
-            </Modal>
-            <Modal
-                title="Оставить ответ по материалу"
-                open={isReflectionModalOpen}
-                onCancel={closeReflectionModal}
-                onOk={handleReflectionSubmit}
-            >
-                <Form layout="vertical" form={reflectionForm}>
-                    <Form.Item
-                        label="Ваш ответ"
-                        name="reflection"
-                        rules={[{ required: true, message: "Введите ответ" }]}
-                    >
-                        <TextArea rows={3} placeholder="Что нового узнали, осталось ли что-то непонятное?" />
-                    </Form.Item>
-                </Form>
-            </Modal>
-        </div>
+          {/* ============================= */}
+          {/* Модалка: Оставить ответ по материалу */}
+          {/* ============================= */}
+          <Modal
+            title="Оставить ответ по материалу"
+            open={isReflectionModalOpen}
+            onCancel={closeReflectionModal}
+            onOk={handleReflectionSubmit}
+          >
+              <Form layout="vertical" form={reflectionForm}>
+                  <Form.Item
+                    label="Ваш ответ"
+                    name="reflection"
+                    rules={[{ required: true, message: "Введите ответ" }]}
+                  >
+                      <TextArea
+                        rows={3}
+                        placeholder="Что нового узнали, осталось ли что-то непонятное?"
+                      />
+                  </Form.Item>
+              </Form>
+          </Modal>
+      </div>
     );
 };
