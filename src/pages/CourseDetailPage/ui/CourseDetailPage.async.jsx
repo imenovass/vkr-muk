@@ -1,7 +1,7 @@
-import { lazy } from "react";
+import { lazy } from 'react'
 
 export const CourseDetailPageAsync = lazy(() =>
-    import("./CourseDetailPage").then((module) => ({
-        default: module.CourseDetailPage,
-    }))
-);
+  import('./CourseDetailPage').then((module) => ({
+    default: module.CourseDetailPage,
+  })),
+)

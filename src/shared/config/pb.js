@@ -1,4 +1,4 @@
 // shared/config/pb.js
-import PocketBase from "pocketbase";
+import PocketBase from 'pocketbase'
 
-export const pb = new PocketBase("https://backendvkr-production.up.railway.app");
+export const pb = new PocketBase('https://backendvkr-production.up.railway.app')

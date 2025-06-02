@@ -1,0 +1,41 @@
+.course-card {
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 13px;
+
+  .ant-card-body {
+    height: 100%;
+  }
+
+  .course-card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .course-description {
+    margin: 0 0 8px;
+    color: #333;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .course-status {
+    margin: 0;
+    color: #52c41a;
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .ant-card-body {
+    padding: 12px 16px;
+  }
+
+  .ant-card-head-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+}

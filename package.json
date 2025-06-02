@@ -10,7 +10,6 @@
     "ajv": "^8.17.1",
     "antd": "^5.23.2",
     "pocketbase": "^0.25.2",
-    "prettier": "^3.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-file-viewer": "^1.2.1",
@@ -20,6 +19,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "format": "prettier --write .",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "predeploy": "npm run build",
@@ -46,6 +46,8 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "gh-pages": "^6.3.0",
+    "prettier": "^3.5.3"
   }
 }
