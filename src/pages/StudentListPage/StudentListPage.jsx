@@ -89,18 +89,30 @@ export const StudentListPage = () => {
                 }}
                 bodyStyle={{ flexGrow: 1, padding: '12px 16px' }}
                 actions={
-                    student.username === user.username
+                  user.role === 'student'
+                    ? student.username === user.username
                       ? [
-                          <Button
-                            type="link"
-                            style={{ fontSize: "13px" }}
-                            onClick={() => navigate(`/students/${student.username}`)}
-                          >
-                              Подробнее
-                          </Button>,
+                        <Button
+                          type="link"
+                          style={{ fontSize: '13px' }}
+                          onClick={() => navigate(`/students/${student.username}`)}
+                        >
+                          Подробнее
+                        </Button>,
                       ]
                       : []
+                    : [
+                      <Button
+                        type="link"
+                        style={{ fontSize: '13px' }}
+                        onClick={() => navigate(`/students/${student.username}`)}
+                      >
+                        Подробнее
+                      </Button>,
+                    ]
                 }
+
+
 
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexGrow: 1 }}>
