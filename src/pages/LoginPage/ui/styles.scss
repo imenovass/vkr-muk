@@ -1,46 +1,62 @@
-.login-container {
-  width: 100%;
-  max-width: 400px; /* чтобы форма не растягивалась на весь экран */
-  margin: 0 auto; /* центрируем по горизонтали */
-  padding: 2rem 1rem;
-  text-align: center;
-  box-sizing: border-box;
+.auth-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
 
-  .logo {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    span {
-      font-weight: 400; // например, меньшая толщина
+  .auth-left {
+    width: 40%;
+    min-width: 320px;
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: #fff;
+
+    .content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .logo-wrapper {
+      margin-bottom: 2rem;
+    }
+
+    .auth-title {
+      font-size: 1rem;
+      color: #888;
+      margin-bottom: 0.25rem;
+    }
+
+    .auth-subtitle {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+
+    .auth-form {
+      .ant-form-item {
+        margin-bottom: 1.5rem;
+      }
+
+      .error-text {
+        color: red;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+    }
+
+    .footer-text {
+      margin-top: 2rem;
+      color: #888;
+      font-size: 0.9rem;
+      line-height: 1.4;
     }
   }
 
-  .welcome-title {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .welcome-subtitle {
-    margin-bottom: 2rem;
-    color: #555;
-    line-height: 1.4;
-  }
-
-  .login-form {
-    text-align: left;
-    .ant-form-item {
-      margin-bottom: 1rem;
-    }
-  }
-
-  .error-text {
-    color: red;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .footer-text {
-    margin-top: 2rem;
-    color: #555;
-    line-height: 1.4;
+  .auth-right {
+    width: 60%;
+    background-image: url('../../../assets/img/login.jpeg'); // замените путь на вашу картинку
+    background-size: cover;
+    background-position: center;
   }
 }

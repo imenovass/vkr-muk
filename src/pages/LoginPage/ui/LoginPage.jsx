@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
 import { Button, Form, Input } from 'antd'
 
 import { loginFx } from '../../../features/auth/model/pbAuth'
@@ -26,41 +25,41 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="login-container">
-      <Logo />
+    <div className="auth-page">
+      <div className="auth-left">
+        <div className="content">
+        <div className="logo-wrapper">
+          <Logo />
+        </div>
 
-      {/* Заголовок */}
-      <h2 className="welcome-title">Добро пожаловать</h2>
-      <p className="welcome-subtitle">
-        Пожалуйста, войдите в систему, используя
-        <br />
-        предоставленные Вам данные:
-      </p>
+        <h2 className="auth-title">Start your journey</h2>
+        <h1 className="auth-subtitle">Sign In to Codify</h1>
 
-      {/* Форма входа */}
-      <Form layout="vertical" onFinish={onFinish} className="login-form">
-        {error && <p className="error-text">{error}</p>}
+        <Form layout="vertical" onFinish={onFinish} className="auth-form">
+          {error && <p className="error-text">{error}</p>}
 
-        <Form.Item name="login" rules={[{ required: true, message: 'Введите логин' }]}>
-          <Input placeholder="Логин" />
-        </Form.Item>
+          <Form.Item name="login" rules={[{ required: true, message: 'Введите логин' }]}>
+            <Input placeholder="Логин" size="large" />
+          </Form.Item>
 
-        <Form.Item name="password" rules={[{ required: true, message: 'Введите пароль' }]}>
-          <Input.Password placeholder="Пароль" />
-        </Form.Item>
+          <Form.Item name="password" rules={[{ required: true, message: 'Введите пароль' }]}>
+            <Input.Password placeholder="Пароль" size="large" />
+          </Form.Item>
 
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Далее
-          </Button>
-        </Form.Item>
-      </Form>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block size="large">
+              Далее
+            </Button>
+          </Form.Item>
+        </Form>
 
-      <p className="footer-text">
-        Если Вы не помните логин или пароль,
-        <br />
-        пожалуйста, обратитесь к администратору.
-      </p>
+        <p className="footer-text">
+          Если вы не помните логин или пароль, обратитесь к администратору.
+        </p>
+      </div>
+      </div>
+
+      <div className="auth-right" />
     </div>
   )
 }
