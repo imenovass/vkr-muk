@@ -5,7 +5,7 @@ import { Button, Form, Input } from 'antd'
 import { loginFx } from '../../../features/auth/model/pbAuth'
 import { setSession } from '../../../features/auth/model/session'
 import Logo from '../../../shared/ui/Logo/Logo'
-import img from "../../../assets/img/login.jpg"
+import img from "../../../assets/img/login.jpeg"
 
 import './styles.scss'
 
@@ -49,7 +49,7 @@ export const LoginPage = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button type="primary" htmlType="submit" block size="large">
+              <Button type="primary" className="login-button" htmlType="submit" block size="large">
                 Далее
               </Button>
             </Form.Item>

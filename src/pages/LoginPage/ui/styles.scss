@@ -8,7 +8,7 @@
 
   .login-card {
     display: flex;
-    width: 900px;
+    width: 1060px;
     height: 500px;
     background: #fff;
     border: 1px solid #ddd;
@@ -76,6 +76,10 @@
         font-size: 0.9rem;
         color: #888;
       }
+    }
+
+    .login-button {
+      background: #5069dd;
     }
 
     .login-right {
